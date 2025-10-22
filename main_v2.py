@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # Import qilish
-from config import BOT_TOKEN, DIRECTIONS, COURSES, COMPLAINT_TYPES
+from config import BOT_TOKEN
 from database import init_database
 from keyboards_all_lang import (
     get_language_keyboard,
@@ -17,7 +17,7 @@ from keyboards_all_lang import (
 from utils import is_admin, lang, t, get_button  # SUPER OSON HELPER!
 
 # Handlerlarni import qilish
-from handlers.complaint import (
+from handlers.complaints.complaint_v2 import (
     start_complaint,
     handle_direction_choice,
     handle_course_choice,
@@ -26,14 +26,14 @@ from handlers.complaint import (
     handle_teacher_entry,
     handle_complaint_message
 )
-from handlers.rules_v2 import (
+from handlers.rules.rules_v2 import (
     show_rules_main,
     show_grading_rules,
     show_exam_rules,
     show_general_rules,
     download_pdf
 )
-from handlers.survey_v2 import (
+from handlers.surveys.survey_v2 import (
     show_survey_main,
     show_teachers_survey,
     show_education_survey,
@@ -41,7 +41,7 @@ from handlers.survey_v2 import (
     open_survey_link,
     show_survey_results
 )
-from handlers.admin import (
+from handlers.admins.admin import (
     show_admin_panel,
     show_statistics,
     view_complaints,

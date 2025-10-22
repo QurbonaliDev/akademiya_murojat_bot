@@ -2,7 +2,7 @@
 # Yordamchi funksiyalar
 
 from config import DIRECTIONS, COURSES, COMPLAINT_TYPES
-from keyboards_all_lang import TEXTS
+from texts import TEXTS
 
 def get_direction_name(direction_code):
     """Yo'nalish kodini nomga o'zgartirish"""
