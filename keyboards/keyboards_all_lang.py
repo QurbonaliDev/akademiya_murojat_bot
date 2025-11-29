@@ -2,8 +2,7 @@
 # Universal 3-language keyboard system (UZ / EN / RU)
 
 from telegram import ReplyKeyboardMarkup, KeyboardButton
-from utils import t, lang
-from  texts import TEXTS
+from text.texts import TEXTS
 
 # === TRANSLATIONS ===
 

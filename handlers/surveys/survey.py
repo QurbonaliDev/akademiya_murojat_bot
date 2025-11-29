@@ -3,8 +3,8 @@
 
 from telegram import Update
 from telegram.ext import ContextTypes
-from keyboards import get_survey_keyboard, get_survey_links_keyboard
-from config import SURVEY_LINKS
+from keyboards.keyboards import get_survey_keyboard, get_survey_links_keyboard
+from config.config import SURVEY_LINKS
 
 
 async def show_survey_main(update: Update, context: ContextTypes.DEFAULT_TYPE):

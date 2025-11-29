@@ -4,10 +4,10 @@
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
-from keyboards import get_admin_keyboard, get_main_menu_keyboard
-from utils import is_admin, get_direction_name, get_course_name, get_complaint_type_name
+from keyboards.keyboards import get_admin_keyboard
+from utils.utils import is_admin, get_direction_name, get_course_name, get_complaint_type_name
 from database import get_all_complaints, get_statistics
-from export import export_to_excel
+from config.export import export_to_excel , export_to_excel_for_lesson_ratings
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +99,32 @@ async def export_to_excel_handler(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text("⏳ Excel fayl tayyorlanmoqda...")
 
         filename = export_to_excel()
+
+        if filename:
+            with open(filename, 'rb') as file:
+                await update.message.reply_document(
+                    document=file,
+                    filename=filename,
+                    caption="📊 Barcha murojaatlar (Excel format)"
+                )
+            await update.message.reply_text("✅ Excel fayli muvaffaqiyatli yuklandi!")
+        else:
+            await update.message.reply_text("❌ Xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.")
+
+    except Exception as e:
+        logger.error(f"Excel export xatosi: {e}")
+        await update.message.reply_text("❌ Xatolik yuz berdi. Ma'lumotlar bazasini tekshiring.")
+
+async def export_to_daily_lesson_excel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Excel faylga export qilish"""
+    if not is_admin(update.effective_user.id):
+        await update.message.reply_text("❌ Sizga ruxsat berilmagan!")
+        return
+
+    try:
+        await update.message.reply_text("⏳ Excel fayl tayyorlanmoqda...")
+
+        filename = export_to_excel_for_lesson_ratings()
 
         if filename:
             with open(filename, 'rb') as file:

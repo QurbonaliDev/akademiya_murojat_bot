@@ -3,64 +3,172 @@
 
 from telegram import Update
 from telegram.ext import ContextTypes
-from keyboards import (
-    get_directions_keyboard,
+
+from config.config import COURSES, COMPLAINT_TYPES, DIRECTIONS_IIXM, DIRECTIONS_MSHF, \
+    DIRECTIONS_ISLOMSHUNOSLIK
+from database import save_complaint
+from keyboards.keyboards import (
     get_courses_keyboard,
     get_complaint_types_keyboard,
     get_back_keyboard,
-    get_main_menu_keyboard
+    get_main_menu_keyboard, get_faculties_keyboard, get_dynamic_keyboard
 )
-from utils import (
-    get_direction_code,
+from utils.utils import (
     get_course_code,
     get_complaint_type_code,
     get_direction_name,
     get_course_name,
-    get_complaint_type_name
+    get_complaint_type_name, get_faculty_code, get_faculty_name
 )
-from database import save_complaint
-from config import DIRECTIONS, COURSES, COMPLAINT_TYPES
 
 
 async def start_complaint(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Murojaat jarayonini boshlash"""
     context.user_data.clear()
-    context.user_data['state'] = 'choosing_direction'
+    context.user_data['state'] = 'choosing_faculty'
 
     await update.message.reply_text(
-        "🎯 Yo'nalishingizni tanlang:",
-        reply_markup=get_directions_keyboard()
+        "🏛 Fakultetingizni tanlang:",
+        reply_markup=get_faculties_keyboard()
     )
 
 
+# ============================
+# Fakultet tanlash
+# ============================
+async def handle_faculty_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    faculty_name = update.message.text
+
+    if faculty_name not in ['IIXM', 'MSHF', 'Islomshunoslik', 'Magistratura']:
+        return
+
+    faculty_code = get_faculty_code(faculty_name)
+    context.user_data['faculty'] = faculty_code
+    context.user_data['state'] = 'choosing_direction'
+
+    # Shu fakultetga tegishli yo'nalishlar
+    directions = get_directions_by_faculty(faculty_code)
+    context.user_data['directions_map'] = directions
+
+    await update.message.reply_text(
+        f"🏛 Fakultet: {faculty_name}\n\n🎯 Yo'nalishingizni tanlang:",
+        reply_markup=get_dynamic_keyboard(directions)
+    )
+
+
+# ============================
+# Yo'nalish tanlash
+# ============================
 async def handle_direction_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Yo'nalish tanlanganida"""
     direction_name = update.message.text
+    directions = context.user_data.get('directions_map', {})
 
-    if direction_name in DIRECTIONS:
-        context.user_data['direction'] = get_direction_code(direction_name)
-        context.user_data['state'] = 'choosing_course'
+    if direction_name not in directions:
+        return
 
-        await update.message.reply_text(
-            f"✅ Yo'nalish: {direction_name}\n\n📚 Kursni tanlang:",
-            reply_markup=get_courses_keyboard()
-        )
+    context.user_data['direction'] = directions[direction_name]
+    context.user_data['state'] = 'choosing_course'
 
+    await update.message.reply_text(
+        f"📘 Yo'nalish: {direction_name}\n\n📚 Endi kursni tanlang:",
+        reply_markup=get_courses_keyboard()
+    )
+
+
+# async def handle_faculty_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     faculty_name = update.message.text
+#
+#     if faculty_name in FACULTIES:
+#         context.user_data['faculty'] = get_faculty_code(faculty_name)
+#         context.user_data['state'] = 'choosing_direction'
+#
+#         await update.message.reply_text(
+#             f"🏛 Fakultet: {faculty_name}\n\n🎯 Endi yo'nalishingizni tanlang:",
+#             reply_markup=get_dynamic_keyboard()
+#         )
+#
+# async def handle_direction_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     direction_name = update.message.text
+#
+#     faculty = context.user_data.get('faculty')
+#     directions = get_directions_by_faculty(faculty)
+#
+#     if direction_name in directions:
+#         context.user_data['direction'] = directions[direction_name]
+#         context.user_data['state'] = 'choosing_course'
+#
+#         await update.message.reply_text(
+#             f"📘 Yo'nalish: {direction_name}\n\n📚 Endi kursni tanlang:",
+#             reply_markup=get_courses_keyboard()
+#         )
+
+
+# async def handle_direction_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     direction_name = update.message.text
+#
+#     if direction_name in DIRECTIONS:
+#         context.user_data['direction'] = get_direction_code(direction_name)
+#         context.user_data['state'] = 'choosing_course'
+#
+#         await update.message.reply_text(
+#             f"📘 Yo'nalish: {direction_name}\n\n📚 Endi kursni tanlang:",
+#             reply_markup=get_courses_keyboard()
+#         )
 
 async def handle_course_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Kurs tanlanganida"""
     course_name = update.message.text
 
     if course_name in COURSES:
         context.user_data['course'] = get_course_code(course_name)
         context.user_data['state'] = 'choosing_complaint_type'
 
-        direction_name = get_direction_name(context.user_data['direction'])
-
         await update.message.reply_text(
-            f"\n\n📝 Murojaat turini tanlang:",
+            "📝 Murojaat turini tanlang:",
             reply_markup=get_complaint_types_keyboard()
         )
+
+
+# async def handle_direction_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     """Yo'nalish tanlanganida"""
+#     direction_name = update.message.text
+#
+#     if direction_name in DIRECTIONS:
+#         context.user_data['direction'] = get_direction_code(direction_name)
+#         context.user_data['state'] = 'choosing_course'
+#
+#         await update.message.reply_text(
+#             f"✅ Yo'nalish: {direction_name}\n\n📚 Kursni tanlang:",
+#             reply_markup=get_faculties_keyboard()
+#         )
+
+# async def handle_faculty_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     """Fakultet tanlanganida"""
+#     faculty_name = update.message.text
+#
+#     if faculty_name in FACULTIES:
+#         context.user_data['faculty'] = get_faculty_code(faculty_name)
+#         context.user_data['state'] = 'choosing_complaint_type'
+#
+#         direction_name = get_direction_name(context.user_data['direction'])
+#
+#         await update.message.reply_text(
+#             f"\n\n📝 Murojaat turini tanlang:",
+#             reply_markup=get_courses_keyboard()
+#         )
+
+# async def handle_course_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# """Kurs tanlanganida"""
+# course_name = update.message.text
+#
+# if course_name in COURSES:
+#     context.user_data['course'] = get_course_code(course_name)
+#     context.user_data['state'] = 'choosing_complaint_type'
+#
+#     direction_name = get_direction_name(context.user_data['direction'])
+#
+#     await update.message.reply_text(
+#         f"\n\n📝 Murojaat turini tanlang:",
+#         reply_markup=get_complaint_types_keyboard()
+#     )
 
 
 async def handle_complaint_type_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -105,6 +213,7 @@ async def handle_teacher_entry(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def ask_complaint_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Murojaat xabarini so'rash"""
+    faculty_name = get_faculty_name(context.user_data['faculty'])
     direction_name = get_direction_name(context.user_data['direction'])
     course_name = get_course_name(context.user_data['course'])
     complaint_type_name = get_complaint_type_name(context.user_data['complaint_type'])
@@ -133,6 +242,7 @@ async def handle_complaint_message(update: Update, context: ContextTypes.DEFAULT
 
     # Ma'lumotlarni to'plash
     complaint_data = {
+        'faculty': context.user_data['faculty'],
         'direction': context.user_data['direction'],
         'course': context.user_data['course'],
         'complaint_type': context.user_data['complaint_type'],
@@ -147,6 +257,7 @@ async def handle_complaint_message(update: Update, context: ContextTypes.DEFAULT
     save_complaint(complaint_data)
 
     # Tasdiqlash xabari
+    faculty_name = get_faculty_name(context.user_data['faculty'])
     direction_name = get_direction_name(context.user_data['direction'])
     course_name = get_course_name(context.user_data['course'])
     complaint_type_name = get_complaint_type_name(context.user_data['complaint_type'])
@@ -174,3 +285,14 @@ async def handle_complaint_message(update: Update, context: ContextTypes.DEFAULT
 
     # Contextni tozalash
     context.user_data.clear()
+
+
+def get_directions_by_faculty(faculty_code):
+    if faculty_code == 'iixm':
+        return DIRECTIONS_IIXM
+    elif faculty_code == 'mshf':
+        return DIRECTIONS_MSHF
+    elif faculty_code == 'islomshunoslik':
+        return DIRECTIONS_ISLOMSHUNOSLIK
+    else:
+        return {}

@@ -2,7 +2,7 @@
 # ReplyKeyboard klaviaturalari
 
 from telegram import ReplyKeyboardMarkup, KeyboardButton
-from config import DIRECTIONS, COURSES, COMPLAINT_TYPES
+from config.config import DIRECTIONS, COURSES, COMPLAINT_TYPES, FACULTIES, FACULTY_DIRECTIONS
 
 
 def get_main_menu_keyboard():
@@ -11,10 +11,10 @@ def get_main_menu_keyboard():
         [KeyboardButton("📝 Murojaat")],
         [KeyboardButton("📋 Tartib qoidalar")],
         [KeyboardButton("📊 So'rovnoma")],
+        [KeyboardButton("🧑‍🏫 Kunlik darsni baholash")],
         [KeyboardButton("👨‍💼 Admin")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-
 
 def get_directions_keyboard():
     """Yo'nalishlar klaviaturasi"""
@@ -22,6 +22,31 @@ def get_directions_keyboard():
     keyboard.append([KeyboardButton("🔙 Orqaga")])
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
+def get_dynamic_keyboard(items: dict):
+    from telegram import ReplyKeyboardMarkup, KeyboardButton
+
+    buttons = [[KeyboardButton(name)] for name in items.keys()]
+    buttons.append(["🔙 Orqaga"])
+
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
+
+
+def get_directions_by_faculty_keyboard(faculty_name):
+    directions = FACULTY_DIRECTIONS.get(faculty_name, {})
+
+    keyboard = []
+    for name in directions.keys():
+        keyboard.append([name])
+
+    keyboard.append(["🔙 Orqaga"])
+
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+def get_faculties_keyboard():
+    """Fajultetlar klaviaturasi"""
+    keyboard = [[KeyboardButton(faculties)] for faculties in FACULTIES.keys()]
+    keyboard.append([KeyboardButton("🔙 Orqaga")])
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 def get_courses_keyboard():
     """Kurslar klaviaturasi"""
@@ -84,10 +109,15 @@ def get_admin_keyboard():
         [KeyboardButton("📊 Statistikalar")],
         [KeyboardButton("📋 Murojaatlarni ko'rish")],
         [KeyboardButton("📤 Excel export")],
+        [KeyboardButton("📤 Kunlik dars hisoboti excel")],
         [KeyboardButton("📈 Dashboard")],
         [KeyboardButton("🔙 Asosiy menyu")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+def get_yes_no_keyboard():
+    from telegram import ReplyKeyboardMarkup
+    return ReplyKeyboardMarkup([["Ha", "Yo'q"]], resize_keyboard=True)
 
 
 def get_back_keyboard():

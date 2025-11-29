@@ -6,15 +6,15 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # Import qilish
-from config import BOT_TOKEN
+from config.config import BOT_TOKEN
 from database import init_database
-from keyboards_all_lang import (
+from keyboards.keyboards_all_lang import (
     get_language_keyboard,
     get_main_menu_keyboard,
     get_settings_keyboard,
     TEXTS
 )
-from utils import is_admin, lang, t, get_button  # SUPER OSON HELPER!
+from utils.utils import is_admin, lang, t, get_button  # SUPER OSON HELPER!
 
 # Handlerlarni import qilish
 from handlers.complaints.complaint_v2 import (

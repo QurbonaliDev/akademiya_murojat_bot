@@ -2,7 +2,7 @@
 # ReplyKeyboard layouts
 
 from telegram import ReplyKeyboardMarkup, KeyboardButton
-from config import DIRECTIONS, COURSES, COMPLAINT_TYPES
+from config.config import DIRECTIONS, COURSES, COMPLAINT_TYPES
 
 
 def get_main_menu_keyboard():

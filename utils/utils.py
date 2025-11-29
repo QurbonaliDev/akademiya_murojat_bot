@@ -1,8 +1,25 @@
 # utils.py
 # Yordamchi funksiyalar
+from telegram import KeyboardButton, ReplyKeyboardMarkup
 
-from config import DIRECTIONS, COURSES, COMPLAINT_TYPES
-from texts import TEXTS
+from config.config import DIRECTIONS, COURSES, COMPLAINT_TYPES, FACULTIES, FACULTY_DIRECTIONS
+from text.texts import TEXTS
+
+
+def get_directions_by_faculty(faculty_code: str):
+    """
+    Fakultet kodiga qarab yo'nalishlar lug'atini qaytaradi
+    """
+    return FACULTY_DIRECTIONS.get(faculty_code.upper(), {})
+
+
+def get_dynamic_keyboard(items: dict):
+    """
+    Lug'atdan telegram keyboard yaratadi
+    """
+    buttons = [[KeyboardButton(name)] for name in items.keys()]
+    buttons.append([KeyboardButton("🔙 Orqaga")])
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
 def get_direction_name(direction_code):
     """Yo'nalish kodini nomga o'zgartirish"""
@@ -14,12 +31,19 @@ def get_direction_code(direction_name):
     """Yo'nalish nomini kodga o'zgartirish"""
     return DIRECTIONS.get(direction_name, '')
 
+def get_faculty_name(course_code):
+    """Kurs kodini nomga o'zgartirish"""
+    faculties = {v: k for k, v in FACULTIES.items()}
+    return faculties.get(course_code, 'Noma\'lum')
 
 def get_course_name(course_code):
     """Kurs kodini nomga o'zgartirish"""
     courses = {v: k for k, v in COURSES.items()}
     return courses.get(course_code, 'Noma\'lum')
 
+def get_faculty_code(course_name):
+    """Fakultet nomini kodga o'zgartirish"""
+    return FACULTIES.get(course_name, '')
 
 def get_course_code(course_name):
     """Kurs nomini kodga o'zgartirish"""
@@ -39,7 +63,7 @@ def get_complaint_type_code(complaint_name):
 
 def is_admin(user_id):
     """Foydalanuvchi admin ekanligini tekshirish"""
-    from config import ADMIN_IDS
+    from config.config import ADMIN_IDS
     return user_id in ADMIN_IDS
 
 

@@ -6,18 +6,51 @@ ADMIN_IDS = [2015170305,1370651372]
 
 DATABASE_NAME = 'education_system.db'
 
+#Fakultetlar
+FACULTIES = {
+    'IIXM': 'iixm',
+    'MSHF': 'mshf',
+    'Islomshunoslik': 'islomshunoslik',
+    'Magistratura': 'magistratura'
+}
+
 # Yo'nalishlar
-DIRECTIONS = {
-    'Islomshunoslik': 'islom',
-    'Dinshunoslik': 'din',
+DIRECTIONS_IIXM = {
     'KI': 'ki',
     'AXB': 'axb',
     'JIXM': 'jixm',
     'Yuristpensiya': 'yurist',
     'Jurnalistika': 'journal',
     'Turizim': 'turizm',
-    'XM': 'xm'
+    'XM': 'xm',
+    'Islom iqtisodi': 'islom_iqtisod',
 }
+
+DIRECTIONS_MSHF = {
+    'Psixologiya': 'psixology',
+    'Filologiya': 'filology',
+    'Matnshunoslik': 'matnshunoslik',
+}
+DIRECTIONS= {
+    'Psixologiya': 'psixology',
+    'Filologiya': 'filology',
+    'Matnshunoslik': 'matnshunoslik',
+}
+
+DIRECTIONS_ISLOMSHUNOSLIK = {
+    'Islomshunoslik': 'islom',
+    'Dinshunoslik': 'din',
+    'Islom tarixi': 'islom_tarix',
+}
+
+# Fakultet -> Yo'nalishlar mapping
+FACULTY_DIRECTIONS = {
+    'IIXM': DIRECTIONS_IIXM,
+    'MSHF': DIRECTIONS_MSHF,
+    'Islomshunoslik': DIRECTIONS_ISLOMSHUNOSLIK,
+    'Magistratura': {}  # keyin to‘ldirasan
+}
+
 
 # Kurslar
 COURSES = {

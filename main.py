@@ -6,20 +6,30 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # Import qilish
-from config import BOT_TOKEN
+from config.config import BOT_TOKEN
 from database import init_database
-from keyboards import get_main_menu_keyboard
-from utils import is_admin
+from keyboards.keyboards import get_main_menu_keyboard
+from utils.utils import is_admin
 
 # Handlerlarni import qilish
 from handlers.complaints.complaint import (
     start_complaint,
+    handle_faculty_choice,
     handle_direction_choice,
     handle_course_choice,
     handle_complaint_type_choice,
     handle_subject_entry,
     handle_teacher_entry,
     handle_complaint_message
+)
+
+from handlers.ratings.lesson_daily_rating import (
+    start_lesson_daily_rating,
+    handle_lesson_direction_choice,
+    handle_lesson_course_choice,
+    handle_subject_name,
+    handle_teacher_name,
+    handle_rating
 )
 from handlers.rules.rules import (
     show_rules_main,
@@ -41,6 +51,7 @@ from handlers.admins.admin import (
     show_statistics,
     view_complaints,
     export_to_excel_handler,
+    export_to_daily_lesson_excel_handler,
     show_dashboard
 )
 
@@ -72,7 +83,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Asosiy menyu tugmalarini boshqarish"""
     text = update.message.text
 
     if text == "📝 Murojaat":
@@ -87,6 +97,9 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "👨‍💼 Admin":
         await show_admin_panel(update, context)
 
+    elif text == "🧑‍🏫 Kunlik darsni baholash":
+        await start_lesson_daily_rating(update, context)
+
     elif text == "🔙 Asosiy menyu" or text == "🔙 Orqaga":
         await start(update, context)
 
@@ -96,41 +109,69 @@ async def handle_complaint_flow(update: Update, context: ContextTypes.DEFAULT_TY
     state = context.user_data.get('state', '')
     text = update.message.text
 
-    # Orqaga tugmasi
+    # 🔙 Orqaga tugmasi
     if text == "🔙 Orqaga":
-        if state in ['choosing_direction', 'rules_main', 'survey_main', 'admin_panel']:
+        if state in ['choosing_faculty', 'rules_main', 'survey_main', 'admin_panel']:
             await start(update, context)
-        elif state == 'choosing_course':
+
+        elif state in ['choosing_direction']:
+            context.user_data['state'] = 'choosing_faculty'
             await start_complaint(update, context)
-        elif state == 'choosing_complaint_type':
+
+        elif state in ['choosing_course', 'choosing_complaint_type']:
             await start_complaint(update, context)
+
         elif state in ['entering_subject', 'entering_teacher', 'entering_message']:
             context.user_data['state'] = 'choosing_complaint_type'
             await handle_course_choice(update, context)
+
         elif state in ['rules_grading', 'rules_exam', 'rules_general']:
             await show_rules_main(update, context)
+
         elif state in ['survey_teachers', 'survey_education', 'survey_employers']:
             await show_survey_main(update, context)
+
         return
 
-    # Murojaat jarayoni
-    if state == 'choosing_direction':
-        await handle_direction_choice(update, context)
+    # =============================
+    # 🔽 Murojaat jarayoni oqimi
+    # =============================
 
+    # 1️⃣ Fakultet tanlash
+    if state == 'choosing_faculty':
+        await handle_faculty_choice(update, context)
+        return
+
+    # 2️⃣ Yo‘nalish tanlash
+    elif state == 'choosing_direction':
+        await handle_direction_choice(update, context)
+        return
+
+    # 3️⃣ Kurs tanlash
     elif state == 'choosing_course':
         await handle_course_choice(update, context)
+        return
 
+    # 4️⃣ Murojaat turi
     elif state == 'choosing_complaint_type':
         await handle_complaint_type_choice(update, context)
+        return
 
+    # 5️⃣ Fan kiritish
     elif state == 'entering_subject':
         await handle_subject_entry(update, context)
+        return
 
+    # 6️⃣ O‘qituvchi ismi kiritish
     elif state == 'entering_teacher':
         await handle_teacher_entry(update, context)
+        return
 
+    # 7️⃣ Murojaat matnini kiritish
     elif state == 'entering_message':
         await handle_complaint_message(update, context)
+        return
+
 
 
 async def handle_rules_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -200,6 +241,9 @@ async def handle_admin_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "📤 Excel export":
         await export_to_excel_handler(update, context)
 
+    elif text == "📤 Kunlik dars hisoboti excel":
+        await export_to_daily_lesson_excel_handler(update, context)
+
     elif text == "📈 Dashboard":
         await show_dashboard(update, context)
 
@@ -210,12 +254,14 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state = context.user_data.get('state', '')
 
     # Asosiy menyu
-    if text in ["📝 Murojaat", "📋 Tartib qoidalar", "📊 So'rovnoma", "👨‍💼 Admin", "🔙 Asosiy menyu"]:
+    if text in ["📝 Murojaat", "📋 Tartib qoidalar",
+                "📊 So'rovnoma", "🧑‍🏫 Kunlik darsni baholash",
+                "👨‍💼 Admin", "🔙 Asosiy menyu"]:
         await handle_main_menu(update, context)
         return
 
     # Murojaat jarayoni
-    if state in ['choosing_direction', 'choosing_course', 'choosing_complaint_type',
+    if state in ['choosing_faculty','choosing_direction', 'choosing_course', 'choosing_complaint_type',
                  'entering_subject', 'entering_teacher', 'entering_message']:
         await handle_complaint_flow(update, context)
         return
@@ -234,6 +280,20 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if state == 'admin_panel':
         await handle_admin_flow(update, context)
         return
+
+    state = context.user_data.get('state')
+
+    # Kunlik darsni baholash jarayoni
+    if state == 'rating_direction':
+        return await handle_lesson_direction_choice(update, context)
+    if state == 'rating_course':
+        return await handle_lesson_course_choice(update, context)
+    if state == 'rating_subject':
+        return await handle_subject_name(update, context)
+    if state == 'rating_teacher':
+        return await handle_teacher_name(update, context)
+    if state == 'rating_process':
+        return await handle_rating(update, context)
 
     # Default - asosiy menyuga qaytish
     await start(update, context)
@@ -263,7 +323,6 @@ def main():
     # Botni ishga tushirish
     logger.info("Bot ishga tushmoqda...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
-
 
 if __name__ == '__main__':
     main()

@@ -4,8 +4,8 @@
 import os
 from telegram import Update
 from telegram.ext import ContextTypes
-from keyboards import get_rules_keyboard, get_rules_detail_keyboard
-from config import PDF_FILES
+from keyboards.keyboards import get_rules_keyboard, get_rules_detail_keyboard
+from config.config import PDF_FILES
 
 
 async def show_rules_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
