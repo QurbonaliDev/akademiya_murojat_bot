@@ -31,6 +31,7 @@ DIRECTIONS_MSHF = {
     'Filologiya': 'filology',
     'Matnshunoslik': 'matnshunoslik',
 }
+
 DIRECTIONS= {
     'Psixologiya': 'psixology',
     'Filologiya': 'filology',
@@ -49,6 +50,13 @@ FACULTY_DIRECTIONS = {
     'MSHF': DIRECTIONS_MSHF,
     'Islomshunoslik': DIRECTIONS_ISLOMSHUNOSLIK,
     'Magistratura': {}  # keyin to‘ldirasan
+}
+
+EDUCATION_TYPE = {
+    'Kunduzgi': 'kunduzgi',
+    'Sirtqi': 'sirtqi',
+    'Kechki': 'kechki',
+    'Masofaviy': 'masofaviy'
 }
 
 

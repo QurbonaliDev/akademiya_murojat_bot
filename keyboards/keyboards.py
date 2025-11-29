@@ -2,7 +2,7 @@
 # ReplyKeyboard klaviaturalari
 
 from telegram import ReplyKeyboardMarkup, KeyboardButton
-from config.config import DIRECTIONS, COURSES, COMPLAINT_TYPES, FACULTIES, FACULTY_DIRECTIONS
+from config.config import DIRECTIONS, COURSES, COMPLAINT_TYPES, FACULTIES, FACULTY_DIRECTIONS, EDUCATION_TYPE
 
 
 def get_main_menu_keyboard():
@@ -26,7 +26,7 @@ def get_dynamic_keyboard(items: dict):
     from telegram import ReplyKeyboardMarkup, KeyboardButton
 
     buttons = [[KeyboardButton(name)] for name in items.keys()]
-    buttons.append(["🔙 Orqaga"])
+    buttons.append([KeyboardButton("🔙 Orqaga")])
 
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
@@ -45,6 +45,12 @@ def get_directions_by_faculty_keyboard(faculty_name):
 def get_faculties_keyboard():
     """Fajultetlar klaviaturasi"""
     keyboard = [[KeyboardButton(faculties)] for faculties in FACULTIES.keys()]
+    keyboard.append([KeyboardButton("🔙 Orqaga")])
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+def get_education_type_keyboard():
+    """Kurslar klaviaturasi"""
+    keyboard = [[KeyboardButton(course)] for course in EDUCATION_TYPE.keys()]
     keyboard.append([KeyboardButton("🔙 Orqaga")])
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -68,7 +74,7 @@ def get_rules_keyboard():
         [KeyboardButton("📊 Baholash jarayoni")],
         [KeyboardButton("📝 Imtihon jarayoni")],
         [KeyboardButton("📋 Umumiy tartib qoida")],
-        [KeyboardButton("🔙 Bosh sahifa")]
+        get_back_keyboard()
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -77,7 +83,7 @@ def get_rules_detail_keyboard():
     """Qoidalar detali klaviaturasi"""
     keyboard = [
         [KeyboardButton("📥 PDF yuklab olish")],
-        [KeyboardButton("🔙 Orqaga")]
+        get_back_keyboard()
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -88,7 +94,7 @@ def get_survey_keyboard():
         [KeyboardButton("👨‍🏫 O'qituvchilar haqida")],
         [KeyboardButton("🎓 Ta'lim sifati")],
         [KeyboardButton("💼 Ish beruvchilar")],
-        [KeyboardButton("🔙 Orqaga")]
+        get_back_keyboard()
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 

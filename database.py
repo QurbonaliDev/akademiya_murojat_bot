@@ -16,6 +16,7 @@ def init_database():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS complaints (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            faculty TEXT NOT NULL,
             direction TEXT NOT NULL,
             course TEXT NOT NULL,
             complaint_type TEXT NOT NULL,
@@ -60,9 +61,10 @@ def save_complaint(data):
     cursor = conn.cursor()
 
     cursor.execute('''
-        INSERT INTO complaints (direction, course, complaint_type, subject_name, teacher_name, message)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO complaints (faculty,direction, course, complaint_type, subject_name, teacher_name, message)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', (
+        data['faculty'],
         data['direction'],
         data['course'],
         data['complaint_type'],

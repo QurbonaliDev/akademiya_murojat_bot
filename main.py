@@ -16,6 +16,7 @@ from handlers.complaints.complaint import (
     start_complaint,
     handle_faculty_choice,
     handle_direction_choice,
+    handle_education_type_choice,
     handle_course_choice,
     handle_complaint_type_choice,
     handle_subject_entry,
@@ -147,6 +148,11 @@ async def handle_complaint_flow(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_direction_choice(update, context)
         return
 
+    # 2️⃣ Yo‘nalish tanlash
+    elif state == 'choosing_education_type':
+        await handle_education_type_choice(update, context)
+        return
+
     # 3️⃣ Kurs tanlash
     elif state == 'choosing_course':
         await handle_course_choice(update, context)
@@ -261,7 +267,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Murojaat jarayoni
-    if state in ['choosing_faculty','choosing_direction', 'choosing_course', 'choosing_complaint_type',
+    if state in ['choosing_faculty','choosing_direction',
+                 'choosing_education_type', 'choosing_course', 'choosing_complaint_type',
                  'entering_subject', 'entering_teacher', 'entering_message']:
         await handle_complaint_flow(update, context)
         return

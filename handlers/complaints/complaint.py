@@ -5,13 +5,13 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config.config import COURSES, COMPLAINT_TYPES, DIRECTIONS_IIXM, DIRECTIONS_MSHF, \
-    DIRECTIONS_ISLOMSHUNOSLIK
+    DIRECTIONS_ISLOMSHUNOSLIK, EDUCATION_TYPE
 from database import save_complaint
 from keyboards.keyboards import (
     get_courses_keyboard,
     get_complaint_types_keyboard,
     get_back_keyboard,
-    get_main_menu_keyboard, get_faculties_keyboard, get_dynamic_keyboard
+    get_main_menu_keyboard, get_faculties_keyboard, get_dynamic_keyboard, get_education_type_keyboard
 )
 from utils.utils import (
     get_course_code,
@@ -65,14 +65,33 @@ async def handle_direction_choice(update: Update, context: ContextTypes.DEFAULT_
     if direction_name not in directions:
         return
 
+    # Tanlangan yo'nalishni saqlaymiz
     context.user_data['direction'] = directions[direction_name]
+    context.user_data['state'] = 'choosing_education_type'
+
+    await update.message.reply_text(
+        f"📘 Yo'nalish: {direction_name}\n\n🎓 Endi talim turini tanlang:",
+        reply_markup=get_education_type_keyboard()  # Talim turlari tugmalari
+    )
+
+# ============================
+# Talim turini tanlash
+# ============================
+async def handle_education_type_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    education_type = update.message.text
+    education_types = context.user_data.get('education_type_map', EDUCATION_TYPE)
+
+    if education_type not in education_types:
+        return
+
+    # Tanlangan talim turini saqlaymiz
+    context.user_data['education_type'] = education_types[education_type]
     context.user_data['state'] = 'choosing_course'
 
     await update.message.reply_text(
-        f"📘 Yo'nalish: {direction_name}\n\n📚 Endi kursni tanlang:",
-        reply_markup=get_courses_keyboard()
+        f"🎓 Talim turi: {education_type}\n\n📚 Endi kursni tanlang:",
+        reply_markup=get_courses_keyboard()  # Kurslar tugmalari
     )
-
 
 # async def handle_faculty_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 #     faculty_name = update.message.text
