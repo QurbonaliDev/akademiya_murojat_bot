@@ -2,7 +2,7 @@
 # Yordamchi funksiyalar
 from telegram import KeyboardButton, ReplyKeyboardMarkup
 
-from config.config import DIRECTIONS, COURSES, COMPLAINT_TYPES, FACULTIES, FACULTY_DIRECTIONS
+from config.config import DIRECTIONS, COURSES, COMPLAINT_TYPES, FACULTIES, FACULTY_DIRECTIONS, EDUCATION_LANG
 from text.texts import TEXTS
 
 
@@ -35,6 +35,11 @@ def get_faculty_name(course_code):
     """Kurs kodini nomga o'zgartirish"""
     faculties = {v: k for k, v in FACULTIES.items()}
     return faculties.get(course_code, 'Noma\'lum')
+
+def get_education_lang_name(education_lang_code):
+    """Kurs kodini nomga o'zgartirish"""
+    education_lang = {v: k for k, v in EDUCATION_LANG.items()}
+    return education_lang.get(education_lang_code, 'Noma\'lum')
 
 def get_course_name(course_code):
     """Kurs kodini nomga o'zgartirish"""

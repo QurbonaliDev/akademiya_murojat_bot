@@ -6,6 +6,14 @@ ADMIN_IDS = [2015170305,1370651372]
 
 DATABASE_NAME = 'education_system.db'
 
+SELECTED_LANGUAGE = 'uz'
+
+LANGS = {
+    'uz': 'O\'zbekcha',
+    'ru': 'Русский',
+    'en': 'English'
+}
+
 #Fakultetlar
 FACULTIES = {
     'IIXM': 'iixm',
@@ -57,6 +65,11 @@ EDUCATION_TYPE = {
     'Sirtqi': 'sirtqi',
     'Kechki': 'kechki',
     'Masofaviy': 'masofaviy'
+}
+
+EDUCATION_LANG = {
+    'O\'zbek': 'uzbek',
+    'Rus': 'rus',
 }
 
 

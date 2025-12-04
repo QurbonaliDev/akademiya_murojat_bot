@@ -19,6 +19,8 @@ def init_database():
             faculty TEXT NOT NULL,
             direction TEXT NOT NULL,
             course TEXT NOT NULL,
+            education_type TEXT,
+            education_lang TEXT,
             complaint_type TEXT NOT NULL,
             subject_name TEXT,
             teacher_name TEXT,

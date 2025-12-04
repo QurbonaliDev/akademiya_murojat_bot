@@ -2,8 +2,15 @@
 # ReplyKeyboard klaviaturalari
 
 from telegram import ReplyKeyboardMarkup, KeyboardButton
-from config.config import DIRECTIONS, COURSES, COMPLAINT_TYPES, FACULTIES, FACULTY_DIRECTIONS, EDUCATION_TYPE
+from config.config import DIRECTIONS, COURSES, COMPLAINT_TYPES, FACULTIES, FACULTY_DIRECTIONS, EDUCATION_TYPE, \
+    EDUCATION_LANG, LANGS
 
+
+def get_language_keyboard() :
+    """Yo'nalishlar klaviaturasi"""
+    keyboard = [[KeyboardButton(direction)] for direction in LANGS.items()]
+    keyboard.append([KeyboardButton("🔙 Orqaga")])
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 def get_main_menu_keyboard():
     """Asosiy menyu klaviaturasi"""
@@ -12,7 +19,8 @@ def get_main_menu_keyboard():
         [KeyboardButton("📋 Tartib qoidalar")],
         [KeyboardButton("📊 So'rovnoma")],
         [KeyboardButton("🧑‍🏫 Kunlik darsni baholash")],
-        [KeyboardButton("👨‍💼 Admin")]
+        [KeyboardButton("👨‍💼 Admin")],
+        [KeyboardButton("🌐 Til tanlash")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -51,6 +59,12 @@ def get_faculties_keyboard():
 def get_education_type_keyboard():
     """Kurslar klaviaturasi"""
     keyboard = [[KeyboardButton(course)] for course in EDUCATION_TYPE.keys()]
+    keyboard.append([KeyboardButton("🔙 Orqaga")])
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+def get_education_lang_keyboard():
+    """Talim tili klaviaturasi"""
+    keyboard = [[KeyboardButton(educationLang)] for educationLang in EDUCATION_LANG.keys()]
     keyboard.append([KeyboardButton("🔙 Orqaga")])
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 

@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # Import qilish
-from config.config import BOT_TOKEN
+from config.config import BOT_TOKEN, SELECTED_LANGUAGE
 from database import init_database
 from keyboards.keyboards import get_main_menu_keyboard
 from utils.utils import is_admin
@@ -17,6 +17,7 @@ from handlers.complaints.complaint import (
     handle_faculty_choice,
     handle_direction_choice,
     handle_education_type_choice,
+    handle_education_lang_choice,
     handle_course_choice,
     handle_complaint_type_choice,
     handle_subject_entry,
@@ -101,8 +102,20 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🧑‍🏫 Kunlik darsni baholash":
         await start_lesson_daily_rating(update, context)
 
+    elif text == "🌐 Til tanlash" :
+        await start(update, context)
+
     elif text == "🔙 Asosiy menyu" or text == "🔙 Orqaga":
         await start(update, context)
+
+
+
+async def handle_select_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Til tanlash jarayonini boshqarish"""
+    language = update.message.text
+    context.user_data['language'] = language
+    SELECTED_LANGUAGE = language
+    await start(update, context)
 
 
 async def handle_complaint_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -148,9 +161,14 @@ async def handle_complaint_flow(update: Update, context: ContextTypes.DEFAULT_TY
         await handle_direction_choice(update, context)
         return
 
-    # 2️⃣ Yo‘nalish tanlash
+    # 2️⃣ Ta'lim yo'nalishini
     elif state == 'choosing_education_type':
         await handle_education_type_choice(update, context)
+        return
+
+    # 2️⃣ Ta'lim tilini tanlash
+    elif state == 'choosing_education_lang':
+        await handle_education_lang_choice(update, context)
         return
 
     # 3️⃣ Kurs tanlash
@@ -268,7 +286,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Murojaat jarayoni
     if state in ['choosing_faculty','choosing_direction',
-                 'choosing_education_type', 'choosing_course', 'choosing_complaint_type',
+                 'choosing_education_type', 'choosing_education_lang', 'choosing_course', 'choosing_complaint_type',
                  'entering_subject', 'entering_teacher', 'entering_message']:
         await handle_complaint_flow(update, context)
         return

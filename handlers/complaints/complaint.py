@@ -5,13 +5,14 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config.config import COURSES, COMPLAINT_TYPES, DIRECTIONS_IIXM, DIRECTIONS_MSHF, \
-    DIRECTIONS_ISLOMSHUNOSLIK, EDUCATION_TYPE
+    DIRECTIONS_ISLOMSHUNOSLIK, EDUCATION_TYPE, EDUCATION_LANG
 from database import save_complaint
 from keyboards.keyboards import (
     get_courses_keyboard,
     get_complaint_types_keyboard,
     get_back_keyboard,
-    get_main_menu_keyboard, get_faculties_keyboard, get_dynamic_keyboard, get_education_type_keyboard
+    get_main_menu_keyboard, get_faculties_keyboard, get_dynamic_keyboard, get_education_type_keyboard,
+    get_education_lang_keyboard
 )
 from utils.utils import (
     get_course_code,
@@ -84,14 +85,43 @@ async def handle_education_type_choice(update: Update, context: ContextTypes.DEF
     if education_type not in education_types:
         return
 
-    # Tanlangan talim turini saqlaymiz
+    # Ta’lim turini saqlaymiz
     context.user_data['education_type'] = education_types[education_type]
+    context.user_data['state'] = 'choosing_education_lang'
+
+    await update.message.reply_text(
+        f"🎓 Ta'lim turi: {education_type}\n\n🌐 Endi ta'lim tilini tanlang:",
+        reply_markup=get_education_lang_keyboard()
+    )
+
+async def handle_education_lang_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang_name = update.message.text
+    lang_map = context.user_data.get('education_lang_map', EDUCATION_LANG)
+
+    if lang_name not in lang_map:
+        return
+
+    context.user_data['education_language'] = lang_map[lang_name]
     context.user_data['state'] = 'choosing_course'
 
     await update.message.reply_text(
-        f"🎓 Talim turi: {education_type}\n\n📚 Endi kursni tanlang:",
-        reply_markup=get_courses_keyboard()  # Kurslar tugmalari
+        f"🌐 Ta'lim tili: {lang_name}\n\n📚 Endi kursni tanlang:",
+        reply_markup=get_courses_keyboard()
     )
+
+
+async def handle_course_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    course_name = update.message.text
+
+    if course_name in COURSES:
+        context.user_data['course'] = get_course_code(course_name)
+        context.user_data['state'] = 'choosing_complaint_type'
+
+        await update.message.reply_text(
+            "📝 Murojaat turini tanlang:",
+            reply_markup=get_complaint_types_keyboard()
+        )
+
 
 # async def handle_faculty_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 #     faculty_name = update.message.text
@@ -132,18 +162,6 @@ async def handle_education_type_choice(update: Update, context: ContextTypes.DEF
 #             f"📘 Yo'nalish: {direction_name}\n\n📚 Endi kursni tanlang:",
 #             reply_markup=get_courses_keyboard()
 #         )
-
-async def handle_course_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    course_name = update.message.text
-
-    if course_name in COURSES:
-        context.user_data['course'] = get_course_code(course_name)
-        context.user_data['state'] = 'choosing_complaint_type'
-
-        await update.message.reply_text(
-            "📝 Murojaat turini tanlang:",
-            reply_markup=get_complaint_types_keyboard()
-        )
 
 
 # async def handle_direction_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
