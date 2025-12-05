@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config.config import COURSES, COMPLAINT_TYPES, DIRECTIONS_IIXM, DIRECTIONS_MSHF, \
-    DIRECTIONS_ISLOMSHUNOSLIK, EDUCATION_TYPE, EDUCATION_LANG
+    DIRECTIONS_ISLOMSHUNOSLIK, EDUCATION_TYPE, EDUCATION_LANG, DIRECTIONS_MAGISTR
 from database import save_complaint
 from keyboards.keyboards import (
     get_courses_keyboard,
@@ -331,5 +331,7 @@ def get_directions_by_faculty(faculty_code):
         return DIRECTIONS_MSHF
     elif faculty_code == 'islomshunoslik':
         return DIRECTIONS_ISLOMSHUNOSLIK
+    elif faculty_code == 'magistratura':
+        return DIRECTIONS_MAGISTR
     else:
         return {}

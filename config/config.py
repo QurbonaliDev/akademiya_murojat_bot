@@ -52,12 +52,29 @@ DIRECTIONS_ISLOMSHUNOSLIK = {
     'Islom tarixi': 'islom_tarix',
 }
 
+DIRECTIONS_MAGISTR = {
+    "Axborot xavfsizligi": "axborot_xavfsizligi",
+    "Islom huquqi": "islom_huquqi",
+    "Ijtimoiy-diniy jarayonlar va radikallashuvni oldini olish": "ijtimoiy_diniy_jarayonlar",
+    "Iqtisodiyot": "iqtisodiyot",
+    "Islomshunoslik": "islomshunoslik",
+    "Lingvistika": "lingvistika",
+    "Matnshunoslik va adabiy manbashunoslik": "matnshunoslik",
+    "Psixologiya": "psixologiya",
+    "Qiyosiy dinshunoslik": "qiyosiy_dinshunoslik",
+    "Tarix": "tarix",
+    "Turizm": "turizm",
+    "Tashqi iqtisodiy faoliyat": "tashqi_iqtisodiy_faoliyat",
+    "Xalqaro munosabatlar va siyosiy jarayonlar": "xalqaro_munosabatlar"
+}
+
+
 # Fakultet -> Yo'nalishlar mapping
 FACULTY_DIRECTIONS = {
     'IIXM': DIRECTIONS_IIXM,
     'MSHF': DIRECTIONS_MSHF,
     'Islomshunoslik': DIRECTIONS_ISLOMSHUNOSLIK,
-    'Magistratura': {}  # keyin to‘ldirasan
+    'Magistratura': DIRECTIONS_MAGISTR  # keyin to‘ldirasan
 }
 
 EDUCATION_TYPE = {
