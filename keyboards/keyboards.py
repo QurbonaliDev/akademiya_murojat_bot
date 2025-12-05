@@ -88,7 +88,7 @@ def get_rules_keyboard():
         [KeyboardButton("📊 Baholash jarayoni")],
         [KeyboardButton("📝 Imtihon jarayoni")],
         [KeyboardButton("📋 Umumiy tartib qoida")],
-        get_back_keyboard()
+        [KeyboardButton("🔙 Orqaga")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -97,18 +97,18 @@ def get_rules_detail_keyboard():
     """Qoidalar detali klaviaturasi"""
     keyboard = [
         [KeyboardButton("📥 PDF yuklab olish")],
-        get_back_keyboard()
+        [KeyboardButton("🔙 Orqaga")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
-def get_survey_keyboard():
+def     get_survey_keyboard():
     """So'rovnoma asosiy klaviaturasi"""
     keyboard = [
         [KeyboardButton("👨‍🏫 O'qituvchilar haqida")],
         [KeyboardButton("🎓 Ta'lim sifati")],
         [KeyboardButton("💼 Ish beruvchilar")],
-        get_back_keyboard()
+        [KeyboardButton("🔙 Orqaga")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 

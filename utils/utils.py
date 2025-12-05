@@ -3,7 +3,6 @@
 from telegram import KeyboardButton, ReplyKeyboardMarkup
 
 from config.config import DIRECTIONS, COURSES, COMPLAINT_TYPES, FACULTIES, FACULTY_DIRECTIONS, EDUCATION_LANG
-from text.texts import TEXTS
 
 
 def get_directions_by_faculty(faculty_code: str):
@@ -79,38 +78,3 @@ def lang(context) -> str:
     Endi har joyda faqat lang(context) yozasan va bo'ldi!
     """
     return context.user_data.get('language', 'uz')
-
-
-def t(key: str, context, **kwargs) -> str:
-    """
-    Tarjima olish - SUPER OSON!
-
-    Foydalanish:
-        t('welcome', context)
-        t('error_message', context, name="Ali")
-    """
-    user_lang = lang(context)
-
-    if key in TEXTS:
-        text = TEXTS[key].get(user_lang, TEXTS[key].get('uz', ''))
-
-        # Agar parametrlar berilgan bo'lsa (masalan, ismni qo'yish uchun)
-        if kwargs:
-            try:
-                text = text.format(**kwargs)
-            except:
-                pass
-
-        return text
-
-    return key
-
-
-def get_button(button_name: str, context) -> str:
-    """
-    Tugma matnini olish
-
-    Foydalanish:
-        get_button('back', context)
-    """
-    return t(button_name, context)
