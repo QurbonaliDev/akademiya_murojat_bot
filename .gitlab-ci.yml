@@ -1,0 +1,27 @@
+image: python:3.11
+
+stages:
+  - deploy
+
+variables:
+  SERVER_USER: "muminovqurbonali"
+  SERVER_HOST: "ssh.pythonanywhere.com"
+  SERVER_PATH: "/home/muminovqurbonali/myproject"
+
+deploy_to_pythonanywhere:
+  stage: deploy
+  before_script:
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - echo "$PA_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan $SERVER_HOST >> ~/.ssh/known_hosts
+  script:
+    - ssh $SERVER_USER@$SERVER_HOST "cd $SERVER_PATH && git init || true"
+    - ssh $SERVER_USER@$SERVER_HOST "cd $SERVER_PATH && git remote remove origin || true"
+    - ssh $SERVER_USER@$SERVER_HOST "cd $SERVER_PATH && git remote add origin git@gitlab.com:username/your-repo.git"
+    - ssh $SERVER_USER@$SERVER_HOST "cd $SERVER_PATH && git fetch origin main"
+    - ssh $SERVER_USER@$SERVER_HOST "cd $SERVER_PATH && git reset --hard origin/main"
+    - ssh $SERVER_USER@$SERVER_HOST "cd $SERVER_PATH && pip install -r requirements.txt"
+    - ssh $SERVER_USER@$SERVER_HOST "touch $SERVER_PATH/.deployed"  # Optional: flag fayl
