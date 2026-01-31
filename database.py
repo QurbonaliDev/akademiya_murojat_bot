@@ -63,12 +63,14 @@ def save_complaint(data):
     cursor = conn.cursor()
 
     cursor.execute('''
-        INSERT INTO complaints (faculty,direction, course, complaint_type, subject_name, teacher_name, message)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO complaints (faculty, direction, course, education_type, education_lang, complaint_type, subject_name, teacher_name, message)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data['faculty'],
         data['direction'],
         data['course'],
+        data.get('education_type', ''),
+        data.get('education_language', ''), # Note: in complaint.py it's 'education_language'
         data['complaint_type'],
         data.get('subject_name', ''),
         data.get('teacher_name', ''),
@@ -143,15 +145,15 @@ def get_statistics():
     stats['total'] = cursor.fetchone()[0]
 
     # Yo'nalishlar bo'yicha
-    cursor.execute('SELECT direction, COUNT(*) FROM complaints GROUP BY direction ORDER BY COUNT(*) ASC')
+    cursor.execute('SELECT direction, COUNT(*) FROM complaints GROUP BY direction ORDER BY COUNT(*) DESC')
     stats['by_direction'] = cursor.fetchall()
 
     # Murojaat turlari bo'yicha
-    cursor.execute('SELECT complaint_type, COUNT(*) FROM complaints GROUP BY complaint_type ORDER BY COUNT(*) ASC')
+    cursor.execute('SELECT complaint_type, COUNT(*) FROM complaints GROUP BY complaint_type ORDER BY COUNT(*) DESC')
     stats['by_type'] = cursor.fetchall()
 
     # Kurslar bo'yicha
-    cursor.execute('SELECT course, COUNT(*) FROM complaints GROUP BY course ORDER BY COUNT(*) ASC')
+    cursor.execute('SELECT course, COUNT(*) FROM complaints GROUP BY course ORDER BY COUNT(*) DESC')
     stats['by_course'] = cursor.fetchall()
 
     # So'nggi 7 kun
@@ -177,7 +179,7 @@ def get_statistics():
     stats['month'] = cursor.fetchone()[0]
 
     # Eng ko'p yo'nalish
-    cursor.execute('SELECT direction, COUNT(*) FROM complaints GROUP BY direction ORDER BY COUNT(*) ASC LIMIT 1')
+    cursor.execute('SELECT direction, COUNT(*) FROM complaints GROUP BY direction ORDER BY COUNT(*) DESC LIMIT 1')
     top = cursor.fetchone()
     stats['top_direction'] = top if top else ('', 0)
 

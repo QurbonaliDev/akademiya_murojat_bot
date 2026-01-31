@@ -6,10 +6,27 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # Import qilish
-from config.config import BOT_TOKEN, SELECTED_LANGUAGE
+# Import qilish
+from config.config import BOT_TOKEN, LANGS
 from database import init_database
-from keyboards.keyboards import get_main_menu_keyboard
-from utils.utils import is_admin
+from keyboards.keyboards import (
+    get_main_menu_keyboard,
+    get_language_keyboard,
+    get_faculties_keyboard,
+    get_dynamic_keyboard,
+    get_education_type_keyboard,
+    get_education_lang_keyboard,
+    get_courses_keyboard,
+    get_complaint_types_keyboard,
+    get_back_keyboard
+)
+from utils.utils import (
+    is_admin,
+    get_text,
+    get_main_menu_buttons,
+    get_directions_by_faculty,
+    get_faculty_name
+)
 
 # Handlerlarni import qilish
 from handlers.complaints.complaint import (
@@ -54,7 +71,8 @@ from handlers.admins.admin import (
     view_complaints,
     export_to_excel_handler,
     export_to_daily_lesson_excel_handler,
-    show_dashboard
+    show_dashboard,
+    show_export_menu # <--- ADDED
 )
 
 # Logging sozlash
@@ -67,55 +85,84 @@ logger = logging.getLogger(__name__)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Bot ishga tushganda"""
-    context.user_data.clear()
+    # Agar til tanlanmagan bo'lsa, til tanlashga yuboramiz
+    if 'language' not in context.user_data:
+        await update.message.reply_text(
+            "Iltimos, tilni tanlang / Пожалуйста, выберите язык / Please select a language:",
+            reply_markup=get_language_keyboard()
+        )
+        return
 
-    welcome_text = (
-        "🎓 Talim tizimi monitoring botiga xush kelibsiz!\n\n"
-        "Bu bot orqali siz:\n"
-        "📝 Anonim murojaat qilishingiz\n"
-        "📋 Tartib qoidalar bilan tanishishingiz\n"
-        "📊 So'rovnomalarda qatnashishingiz mumkin\n\n"
-        "Quyidagi tugmalardan birini tanlang:"
-    )
+    # context.user_data.clear() # Buni o'chiramiz, chunki tilni o'chirib yuboradi
+
+    welcome_text = get_text('welcome', context)
 
     await update.message.reply_text(
         welcome_text,
-        reply_markup=get_main_menu_keyboard()
+        reply_markup=get_main_menu_keyboard(context)
     )
 
 
 async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-
-    if text == "📝 Murojaat":
+    
+    # Tarjimalarni tekshirish (chunki tugma matni tilga qarab o'zgaradi)
+    # Eng yaxshi yo'l - har bir til uchun variantlarni tekshirish yoki callback_query ishlatish.
+    # Lekin hozirgi strukturada utils.get_text orqali kalit so'zlarni solishtiramiz.
+    
+    # QAYD: Tugma matnini tekshirish biroz qiyinroq, chunki biz key'ni bilmaymiz.
+    # Shuning uchun barcha tillardagi variantlarni tekshiramiz.
+    
+    # Keling, oddiyroq yo'l tutamiz: 
+    # Hozircha hardcode qilingan stringlarni utils.get_text bilan almashtiramiz.
+    
+    if text == get_text('btn_complaint', context):
         await start_complaint(update, context)
 
-    elif text == "📋 Tartib qoidalar":
+    elif text == get_text('btn_rules', context):
         await show_rules_main(update, context)
 
-    elif text == "📊 So'rovnoma":
+    elif text == get_text('btn_survey', context):
         await show_survey_main(update, context)
 
-    elif text == "👨‍💼 Admin":
+    elif text == get_text('btn_admin', context):
         await show_admin_panel(update, context)
 
-    elif text == "🧑‍🏫 Kunlik darsni baholash":
+    elif text == get_text('btn_lesson_rating', context):
         await start_lesson_daily_rating(update, context)
 
-    elif text == "🌐 Til tanlash" :
-        await start(update, context)
+    elif text == get_text('btn_lang', context):
+        await update.message.reply_text(
+            get_text('btn_lang', context) + ":",
+            reply_markup=get_language_keyboard()
+        )
 
-    elif text == "🔙 Asosiy menyu" or text == "🔙 Orqaga":
+    elif text == get_text('btn_back_main', context) or text == get_text('btn_back', context):
         await start(update, context)
 
 
 
 async def handle_select_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Til tanlash jarayonini boshqarish"""
-    language = update.message.text
-    context.user_data['language'] = language
-    SELECTED_LANGUAGE = language
-    await start(update, context)
+    text = update.message.text
+    
+    # LANGS values (🇺🇿 O'zbekcha, 🇷🇺 Русский...) orqali kodni topamiz
+    selected_lang_code = None
+    for code, name in LANGS.items():
+        if text == name:
+            selected_lang_code = code
+            break
+            
+    if selected_lang_code:
+        context.user_data['language'] = selected_lang_code
+        # Tanlangandan keyin holatni tozalaymiz va asosiy menyuga o'tamiz
+        context.user_data['state'] = ''
+        await start(update, context)
+    else:
+        # Noto'g'ri tanlov
+        await update.message.reply_text(
+            "Iltimos, tugmalardan birini tanlang / Пожалуйста, выберите одну из кнопок"
+        )
 
 
 async def handle_complaint_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -123,28 +170,85 @@ async def handle_complaint_flow(update: Update, context: ContextTypes.DEFAULT_TY
     state = context.user_data.get('state', '')
     text = update.message.text
 
-    # 🔙 Orqaga tugmasi
-    if text == "🔙 Orqaga":
-        if state in ['choosing_faculty', 'rules_main', 'survey_main', 'admin_panel']:
+    # 🔙 Orqaga tugmasi (Mantiqiy zanjir)
+    if text == get_text('btn_back', context):
+        if state == 'choosing_faculty':
             await start(update, context)
-
-        elif state in ['choosing_direction']:
-            context.user_data['state'] = 'choosing_faculty'
+        
+        elif state == 'choosing_direction':
             await start_complaint(update, context)
 
-        elif state in ['choosing_course', 'choosing_complaint_type']:
-            await start_complaint(update, context)
+        elif state == 'choosing_education_type':
+            # Fakultetni aniqlaymiz va yo'nalishlar keyboardini qayta chiqaramiz
+            faculty_code = context.user_data.get('faculty')
+            directions = get_directions_by_faculty(faculty_code)
+            context.user_data['state'] = 'choosing_direction'
+            faculty_name = get_faculty_name(faculty_code, context)
+            await update.message.reply_text(
+                f"🏛 {faculty_name}\n\n{get_text('choose_direction', context)}",
+                reply_markup=get_dynamic_keyboard(directions, context)
+            )
 
-        elif state in ['entering_subject', 'entering_teacher', 'entering_message']:
+        elif state == 'choosing_education_lang':
+            context.user_data['state'] = 'choosing_education_type'
+            await update.message.reply_text(
+                get_text('choose_edu_type', context),
+                reply_markup=get_education_type_keyboard(context)
+            )
+
+        elif state == 'choosing_course':
+            faculty = context.user_data.get('faculty', '')
+            if faculty == 'magistratura':
+                # Magistratura - yo'nalish tanlashga qaytadi
+                directions = context.user_data.get('directions_map', {})
+                faculty_name = get_faculty_name(faculty, context)
+                context.user_data['state'] = 'choosing_direction'
+                await update.message.reply_text(
+                    f"🏛 {faculty_name}\n\n{get_text('choose_direction', context)}",
+                    reply_markup=get_dynamic_keyboard(directions, context)
+                )
+            else:
+                context.user_data['state'] = 'choosing_education_lang'
+                await update.message.reply_text(
+                    get_text('choose_edu_lang', context),
+                    reply_markup=get_education_lang_keyboard(context)
+                )
+
+        elif state == 'choosing_complaint_type':
+            context.user_data['state'] = 'choosing_course'
+            await update.message.reply_text(
+                get_text('choose_course', context),
+                reply_markup=get_courses_keyboard(context)
+            )
+
+        elif state == 'entering_subject':
             context.user_data['state'] = 'choosing_complaint_type'
-            await handle_course_choice(update, context)
+            await update.message.reply_text(
+                get_text('choose_complaint_type', context),
+                reply_markup=get_complaint_types_keyboard(context)
+            )
 
-        elif state in ['rules_grading', 'rules_exam', 'rules_general']:
-            await show_rules_main(update, context)
+        elif state == 'entering_teacher':
+            context.user_data['state'] = 'entering_subject'
+            await update.message.reply_text(
+                get_text('enter_subject', context),
+                reply_markup=get_back_keyboard(context)
+            )
 
-        elif state in ['survey_teachers', 'survey_education', 'survey_employers']:
-            await show_survey_main(update, context)
-
+        elif state == 'entering_message':
+            complaint_type = context.user_data.get('complaint_type')
+            if complaint_type == 'teacher':
+                context.user_data['state'] = 'entering_teacher'
+                await update.message.reply_text(
+                    get_text('enter_teacher', context),
+                    reply_markup=get_back_keyboard(context)
+                )
+            else:
+                context.user_data['state'] = 'choosing_complaint_type'
+                await update.message.reply_text(
+                    get_text('choose_complaint_type', context),
+                    reply_markup=get_complaint_types_keyboard(context)
+                )
         return
 
     # =============================
@@ -203,73 +307,86 @@ async def handle_rules_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state = context.user_data.get('state', '')
     text = update.message.text
 
-    if text == "📊 Baholash jarayoni":
+    if text == get_text('btn_grading', context):
         await show_grading_rules(update, context)
 
-    elif text == "📝 Imtihon jarayoni":
+    elif text == get_text('btn_exam', context):
         await show_exam_rules(update, context)
 
-    elif text == "📋 Umumiy tartib qoida":
-        if state == 'rules_main':
-            await show_general_rules(update, context)
-        else:
-            await show_rules_main(update, context)
+    elif text == get_text('btn_general', context):
+        await show_general_rules(update, context)
 
-    elif text == "🔙 Bosh sahifa":
-            await start(update, context)
-
-    elif text == "📥 PDF yuklab olish":
+    elif text == get_text('btn_download_pdf', context):
         await download_pdf(update, context)
 
-    elif text == "🔙 Orqaga":
-        await show_rules_main(update, context)
+    elif text == get_text('btn_back', context):
+        if state == 'rules_main':
+            await start(update, context)
+        else:
+            # Har qanday qoida ichidan asosiy qoidalar menyusiga qaytamiz
+            await show_rules_main(update, context)
 
 
 async def handle_survey_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """So'rovnoma jarayonini boshqarish"""
+    state = context.user_data.get('state', '')
     text = update.message.text
 
-    if text == "👨‍🏫 O'qituvchilar haqida":
+    if text == get_text('btn_survey_teachers', context):
         await show_teachers_survey(update, context)
 
-    elif text == "🎓 Talim sifati":
+    elif text == get_text('btn_survey_edu', context):
         await show_education_survey(update, context)
 
-    elif text == "💼 Ish beruvchilar":
+    elif text == get_text('btn_survey_emp', context):
         await show_employers_survey(update, context)
 
-    elif text == "🔗 So'rovnomaga o'tish":
+    elif text == get_text('btn_survey_link', context):
         await open_survey_link(update, context)
 
-    elif text == "📊 Natijalarni ko'rish":
-        await show_survey_results(update, context)
-
-    elif text == "🔙 Orqaga":
-        await handle_main_menu(update, context)
+    elif text == get_text('btn_back', context):
+        if state == 'survey_main':
+            await start(update, context)
+        else:
+            await show_survey_main(update, context)
 
 
 async def handle_admin_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Admin panel jarayonini boshqarish"""
     if not is_admin(update.effective_user.id):
-        await update.message.reply_text("❌ Sizga ruxsat berilmagan!")
+        await update.message.reply_text(get_text('no_permission', context))
         return
 
     text = update.message.text
 
-    if text == "📊 Statistikalar":
+    if text == get_text('btn_stats', context):
         await show_statistics(update, context)
 
-    elif text == "📋 Murojaatlarni ko'rish":
+    elif text == get_text('btn_view_complaints', context):
         await view_complaints(update, context)
 
-    elif text == "📤 Excel export":
+    elif text == get_text('btn_export_menu', context):
+        await show_export_menu(update, context)
+
+    elif text == get_text('btn_dashboard', context):
+        await show_dashboard(update, context)
+    
+    elif text == get_text('btn_back_main', context):
+        await start(update, context)
+
+
+async def handle_admin_export_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Excel export jarayonini boshqarish"""
+    text = update.message.text
+
+    if text == get_text('btn_export_excel', context):
         await export_to_excel_handler(update, context)
 
-    elif text == "📤 Kunlik dars hisoboti excel":
+    elif text == get_text('btn_export_lesson', context):
         await export_to_daily_lesson_excel_handler(update, context)
 
-    elif text == "📈 Dashboard":
-        await show_dashboard(update, context)
+    elif text == get_text('btn_back', context):
+        await show_admin_panel(update, context)
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -277,11 +394,23 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     state = context.user_data.get('state', '')
 
-    # Asosiy menyu
-    if text in ["📝 Murojaat", "📋 Tartib qoidalar",
-                "📊 So'rovnoma", "🧑‍🏫 Kunlik darsni baholash",
-                "👨‍💼 Admin", "🔙 Asosiy menyu"]:
+    # 1. Global: Til tanlash (Har qanday holatda ishlaydi)
+    if text in LANGS.values():
+        await handle_select_language(update, context)
+        return
+
+    # 2. Global: Asosiy menyu tugmalari
+    # Har bir tildagi variantlarni tekshirish kerak (Endi utils orqali)
+    main_menu_buttons = get_main_menu_buttons()
+
+    if text in main_menu_buttons:
+        # Menyu tugmasi bosilsa, holatdan qat'iy nazar menyuga ishlov beramiz
         await handle_main_menu(update, context)
+        return
+
+    # 3. Holatga qarab boshqarish
+    if not state:
+        await start(update, context)
         return
 
     # Murojaat jarayoni
@@ -305,20 +434,27 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if state == 'admin_panel':
         await handle_admin_flow(update, context)
         return
-
-    state = context.user_data.get('state')
+    
+    if state == 'admin_export_menu':
+        await handle_admin_export_flow(update, context)
+        return
 
     # Kunlik darsni baholash jarayoni
     if state == 'rating_direction':
-        return await handle_lesson_direction_choice(update, context)
+        await handle_lesson_direction_choice(update, context)
+        return
     if state == 'rating_course':
-        return await handle_lesson_course_choice(update, context)
+        await handle_lesson_course_choice(update, context)
+        return
     if state == 'rating_subject':
-        return await handle_subject_name(update, context)
+        await handle_subject_name(update, context)
+        return
     if state == 'rating_teacher':
-        return await handle_teacher_name(update, context)
+        await handle_teacher_name(update, context)
+        return
     if state == 'rating_process':
-        return await handle_rating(update, context)
+        await handle_rating(update, context)
+        return
 
     # Default - asosiy menyuga qaytish
     await start(update, context)

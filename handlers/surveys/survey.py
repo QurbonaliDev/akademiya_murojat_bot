@@ -5,6 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from keyboards.keyboards import get_survey_keyboard, get_survey_links_keyboard
 from config.config import SURVEY_LINKS
+from utils.utils import get_text
 
 
 async def show_survey_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -12,8 +13,8 @@ async def show_survey_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['state'] = 'survey_main'
 
     await update.message.reply_text(
-        "📊 So'rovnoma bo'limi:\n\nQuyidagi so'rovnomalardan birini tanlang:",
-        reply_markup=get_survey_keyboard()
+        get_text('survey_main', context),
+        reply_markup=get_survey_keyboard(context)
     )
 
 
@@ -24,15 +25,9 @@ async def show_teachers_survey(update: Update, context: ContextTypes.DEFAULT_TYP
 
     link = SURVEY_LINKS.get('teachers')
 
-    text = (
-        "👨‍🏫 O'qituvchilar haqida so'rovnoma\n\n"
-        "Ushbu so'rovnomada o'qituvchilarning dars o'tish uslubi, "
-        "talabalar bilan muloqoti va kasbiy mahorati haqida fikr bildiring.\n\n"
-        f"🔗 Havola: {link}\n\n"
-        "So'rovnoma to'liq anonim tarzda o'tkaziladi."
-    )
-
-    await update.message.reply_text(text, reply_markup=get_survey_links_keyboard())
+    text = get_text('survey_teachers_text', context).format(link=link)
+    
+    await update.message.reply_text(text, reply_markup=get_survey_links_keyboard(context))
 
 
 async def show_education_survey(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -42,15 +37,9 @@ async def show_education_survey(update: Update, context: ContextTypes.DEFAULT_TY
 
     link = SURVEY_LINKS.get('education')
 
-    text = (
-        "🎓 Ta'lim sifati so'rovnomasi\n\n"
-        "Bu so'rovnomada ta'lim jarayoni, o'quv dasturlari va ta'lim sifati "
-        "haqida fikr bildiring.\n\n"
-        f"🔗 Havola: {link}\n\n"
-        "So'rovnoma to'liq anonim shaklda o'tkaziladi."
-    )
+    text = get_text('survey_edu_text', context).format(link=link)
 
-    await update.message.reply_text(text, reply_markup=get_survey_links_keyboard())
+    await update.message.reply_text(text, reply_markup=get_survey_links_keyboard(context))
 
 
 async def show_employers_survey(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -60,15 +49,9 @@ async def show_employers_survey(update: Update, context: ContextTypes.DEFAULT_TY
 
     link = SURVEY_LINKS.get('employers')
 
-    text = (
-        "💼 Ish beruvchilar so'rovnomasi\n\n"
-        "Ushbu so'rovnomada bitiruvchilarning kasbiy ko'nikmalari "
-        "va mehnat bozoriga tayyorgarligi haqida fikr bildiring.\n\n"
-        f"🔗 Havola: {link}\n\n"
-        "So'rovnoma to'liq anonim tarzda o'tkaziladi."
-    )
+    text = get_text('survey_emp_text', context).format(link=link)
 
-    await update.message.reply_text(text, reply_markup=get_survey_links_keyboard())
+    await update.message.reply_text(text, reply_markup=get_survey_links_keyboard(context))
 
 
 async def open_survey_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -76,17 +59,17 @@ async def open_survey_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     survey_type = context.user_data.get('current_survey')
 
     if not survey_type:
-        await update.message.reply_text("❌ Avval so'rovnoma turini tanlang.")
+        await update.message.reply_text(get_text('error_no_survey_type', context))
         return
 
     link = SURVEY_LINKS.get(survey_type)
 
     if link:
         await update.message.reply_text(
-            f"🔗 Quyidagi havola orqali so'rovnomaga o'ting:\n\n{link}"
+            f"🔗 {link}"
         )
     else:
-        await update.message.reply_text("❌ Havola topilmadi.")
+        await update.message.reply_text(get_text('error_link_not_found', context))
 
 
 async def show_survey_results(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -94,7 +77,7 @@ async def show_survey_results(update: Update, context: ContextTypes.DEFAULT_TYPE
     survey_type = context.user_data.get('current_survey')
 
     if not survey_type:
-        await update.message.reply_text("❌ Avval so'rovnoma turini tanlang.")
+        await update.message.reply_text(get_text('error_no_survey_type', context))
         return
 
     link = SURVEY_LINKS.get(survey_type)
@@ -102,7 +85,7 @@ async def show_survey_results(update: Update, context: ContextTypes.DEFAULT_TYPE
     if link:
         results_link = f"{link}&viewanalytics=1"
         await update.message.reply_text(
-            f"📊 So'rovnoma natijalarini ko'rish:\n\n{results_link}"
+            get_text('survey_result_link', context).format(link=results_link)
         )
     else:
-        await update.message.reply_text("❌ Havola topilmadi.")
+        await update.message.reply_text(get_text('error_link_not_found', context))

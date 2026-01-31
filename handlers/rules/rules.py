@@ -6,6 +6,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from keyboards.keyboards import get_rules_keyboard, get_rules_detail_keyboard
 from config.config import PDF_FILES
+from utils.utils import get_text
 
 
 async def show_rules_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -13,8 +14,8 @@ async def show_rules_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['state'] = 'rules_main'
 
     await update.message.reply_text(
-        "📋 Tartib qoidalar bo'limi:\n\nQuyidagi bo'limlardan birini tanlang:",
-        reply_markup=get_rules_keyboard()
+        get_text('rules_main', context),
+        reply_markup=get_rules_keyboard(context)
     )
 
 
@@ -23,19 +24,11 @@ async def show_grading_rules(update: Update, context: ContextTypes.DEFAULT_TYPE)
     context.user_data['state'] = 'rules_grading'
     context.user_data['current_pdf'] = 'grading'
 
-    text = (
-        "📊 Baholash jarayoni:\n\n"
-        "Talabalarning bilim darajasi 100 ballik tizim asosida baholanadi:\n\n"
-        "• 86-100 ball - A'lo\n"
-        "• 71-85 ball - Yaxshi\n"
-        "• 56-70 ball - Qoniqarli\n"
-        "• 55 va undan past - Qoniqarsiz\n\n"
-        "Baholash amaliy, nazariy va mustaqil ishlar asosida amalga oshiriladi."
-    )
+    text = get_text('rules_grading_text', context)
 
     await update.message.reply_text(
         text,
-        reply_markup=get_rules_detail_keyboard()
+        reply_markup=get_rules_detail_keyboard(context)
     )
 
 
@@ -44,18 +37,11 @@ async def show_exam_rules(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['state'] = 'rules_exam'
     context.user_data['current_pdf'] = 'exam'
 
-    text = (
-        "📝 Imtihon jarayoni:\n\n"
-        "Imtihonlar semestr davomida va oxirida o'tkaziladi:\n\n"
-        "• O'rta nazorat (midterm) - 30%\n"
-        "• Amaliy topshiriqlar - 20%\n"
-        "• Yakuniy imtihon - 50%\n\n"
-        "Imtihonlar ochiq va yopiq shaklda o'tkazilishi mumkin."
-    )
+    text = get_text('rules_exam_text', context)
 
     await update.message.reply_text(
         text,
-        reply_markup=get_rules_detail_keyboard()
+        reply_markup=get_rules_detail_keyboard(context)
     )
 
 
@@ -64,19 +50,11 @@ async def show_general_rules(update: Update, context: ContextTypes.DEFAULT_TYPE)
     context.user_data['state'] = 'rules_general'
     context.user_data['current_pdf'] = 'rules'
 
-    text = (
-        "📋 Umumiy tartib qoidalar:\n\n"
-        "1. Darslarga vaqtida kelish majburiy\n"
-        "2. O'qituvchilarga hurmatli munosabat\n"
-        "3. Akademik halollik prinsipi\n"
-        "4. O'quv jarayonida faol ishtirok\n"
-        "5. Muhokamalarda adabiy til\n\n"
-        "Qoidalarni buzgan talabalar intizomiy javobgarlikka tortiladi."
-    )
+    text = get_text('rules_general_text', context)
 
     await update.message.reply_text(
         text,
-        reply_markup=get_rules_detail_keyboard()
+        reply_markup=get_rules_detail_keyboard(context)
     )
 
 
@@ -85,20 +63,17 @@ async def download_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pdf_type = context.user_data.get('current_pdf')
 
     if not pdf_type:
-        await update.message.reply_text("❌ Avval qoidalar bo'limini tanlang.")
+        await update.message.reply_text(get_text('error_no_rules_type', context))
         return
 
-    pdf_name = PDF_FILES.get(pdf_type, 'document.pdf')
+    pdf_path = PDF_FILES.get(pdf_type, 'document.pdf')
 
-    if os.path.exists(pdf_name):
-        with open(pdf_name, 'rb') as pdf_file:
+    if os.path.exists(pdf_path):
+        with open(pdf_path, 'rb') as pdf_file:
             await update.message.reply_document(
                 document=pdf_file,
-                filename=pdf_name,
-                caption=f"📥 {pdf_name} fayli"
+                filename=os.path.basename(pdf_path),
+                caption=get_text('btn_download_pdf', context)
             )
     else:
-        await update.message.reply_text(
-            f"❌ {pdf_name} fayli hozircha mavjud emas.\n"
-            "Keyinroq urinib ko'ring yoki administratorga murojaat qiling."
-        )
+        await update.message.reply_text(get_text('error_pdf_not_found', context))

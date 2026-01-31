@@ -9,102 +9,117 @@ DATABASE_NAME = 'education_system.db'
 SELECTED_LANGUAGE = 'uz'
 
 LANGS = {
-    'uz': 'O\'zbekcha',
-    'ru': 'Русский',
-    'en': 'English'
+    'uz': '🇺🇿 O\'zbekcha',
+    'ru': '🇷🇺 Русский',
+    'en': '🇬🇧 English'
 }
 
-#Fakultetlar
+# Fakultetlar (Kodlar)
 FACULTIES = {
-    'IIXM': 'iixm',
-    'MSHF': 'mshf',
-    'Islomshunoslik': 'islomshunoslik',
-    'Magistratura': 'magistratura'
+    'iixm': 'faculty_iixm',
+    'mshf': 'faculty_mshf',
+    'islomshunoslik': 'faculty_islomshunoslik',
+    'magistratura': 'faculty_magistratura'
 }
 
-# Yo'nalishlar
+# Yo'nalishlar (Kodlar)
 DIRECTIONS_IIXM = {
-    'KI': 'ki',
-    'AXB': 'axb',
-    'JIXM': 'jixm',
-    'Yuristpensiya': 'yurist',
-    'Jurnalistika': 'journal',
-    'Turizim': 'turizm',
-    'XM': 'xm',
-    'Islom iqtisodi': 'islom_iqtisod',
+    'ki': 'dir_ki',
+    'axb': 'dir_axb',
+    'jixm': 'dir_jixm',
+    'yurist': 'dir_yurist',
+    'journal': 'dir_journal',
+    'turizm': 'dir_turizm',
+    'xm': 'dir_xm',
+    'islom_iqtisod': 'dir_islom_iqtisod',
 }
 
 DIRECTIONS_MSHF = {
-    'Psixologiya': 'psixology',
-    'Filologiya': 'filology',
-    'Matnshunoslik': 'matnshunoslik',
-}
-
-DIRECTIONS= {
-    'Psixologiya': 'psixology',
-    'Filologiya': 'filology',
-    'Matnshunoslik': 'matnshunoslik',
+    'psixology': 'dir_psixology',
+    'filology': 'dir_filology',
+    'matnshunoslik': 'dir_matnshunoslik',
 }
 
 DIRECTIONS_ISLOMSHUNOSLIK = {
-    'Islomshunoslik': 'islom',
-    'Dinshunoslik': 'din',
-    'Islom tarixi': 'islom_tarix',
+    'islom': 'dir_islom',
+    'din': 'dir_din',
+    'islom_tarix': 'dir_islom_tarix',
 }
 
 DIRECTIONS_MAGISTR = {
-    "Axborot xavfsizligi": "axborot_xavfsizligi",
-    "Islom huquqi": "islom_huquqi",
-    "Ijtimoiy-diniy jarayonlar va radikallashuvni oldini olish": "ijtimoiy_diniy_jarayonlar",
-    "Iqtisodiyot": "iqtisodiyot",
-    "Islomshunoslik": "islomshunoslik",
-    "Lingvistika": "lingvistika",
-    "Matnshunoslik va adabiy manbashunoslik": "matnshunoslik",
-    "Psixologiya": "psixologiya",
-    "Qiyosiy dinshunoslik": "qiyosiy_dinshunoslik",
-    "Tarix": "tarix",
-    "Turizm": "turizm",
-    "Tashqi iqtisodiy faoliyat": "tashqi_iqtisodiy_faoliyat",
-    "Xalqaro munosabatlar va siyosiy jarayonlar": "xalqaro_munosabatlar"
+    "axborot_xavfsizligi": "dir_axborot_xavfsizligi",
+    "islom_huquqi": "dir_islom_huquqi",
+    "ijtimoiy_diniy_jarayonlar": "dir_ijtimoiy_diniy_jarayonlar",
+    "iqtisodiyot": "dir_iqtisodiyot",
+    "islomshunoslik": "dir_islomshunoslik_mag",
+    "lingvistika": "dir_lingvistika",
+    "matnshunoslik": "dir_matnshunoslik_mag",
+    "psixologiya": "dir_psixologiya_mag",
+    "qiyosiy_dinshunoslik": "dir_qiyosiy_dinshunoslik",
+    "tarix": "dir_tarix",
+    "turizm": "dir_turizm_mag",
+    "tashqi_iqtisodiy_faoliyat": "dir_tashqi_iqtisodiy_faoliyat",
+    "xalqaro_munosabatlar": "dir_xalqaro_munosabatlar"
 }
 
+# Hamma yo'nalishlar bitta joyda (qulaylik uchun)
+ALL_DIRECTIONS = {}
+ALL_DIRECTIONS.update(DIRECTIONS_IIXM)
+ALL_DIRECTIONS.update(DIRECTIONS_MSHF)
+ALL_DIRECTIONS.update(DIRECTIONS_ISLOMSHUNOSLIK)
+ALL_DIRECTIONS.update(DIRECTIONS_MAGISTR)
 
-# Fakultet -> Yo'nalishlar mapping
+
+# Fakultet -> Yo'nalishlar mapping (Kodlar bo'yicha)
 FACULTY_DIRECTIONS = {
-    'IIXM': DIRECTIONS_IIXM,
-    'MSHF': DIRECTIONS_MSHF,
-    'Islomshunoslik': DIRECTIONS_ISLOMSHUNOSLIK,
-    'Magistratura': DIRECTIONS_MAGISTR  # keyin to‘ldirasan
+    'iixm': DIRECTIONS_IIXM,
+    'mshf': DIRECTIONS_MSHF,
+    'islomshunoslik': DIRECTIONS_ISLOMSHUNOSLIK,
+    'magistratura': DIRECTIONS_MAGISTR
 }
 
 EDUCATION_TYPE = {
-    'Kunduzgi': 'kunduzgi',
-    'Sirtqi': 'sirtqi',
-    'Kechki': 'kechki',
-    'Masofaviy': 'masofaviy'
+    'kunduzgi': 'edu_kunduzgi',
+    'sirtqi': 'edu_sirtqi',
+    'kechki': 'edu_kechki',
+    'masofaviy': 'edu_masofaviy'
 }
 
 EDUCATION_LANG = {
-    'O\'zbek': 'uzbek',
-    'Rus': 'rus',
+    'uzbek': 'lang_uzbek',
+    'rus': 'lang_rus',
 }
 
 
 # Kurslar
 COURSES = {
-    '1-kurs': '1',
-    '2-kurs': '2',
-    '3-kurs': '3',
-    '4-kurs': '4',
-    '1-magistr': 'mag1',
-    '2-magistr': 'mag2'
+    '1': 'course_1',
+    '2': 'course_2',
+    '3': 'course_3',
+    '4': 'course_4',
+    'mag1': 'course_mag1',
+    'mag2': 'course_mag2'
+}
+
+# Oddiy fakultetlar uchun kurslar (1-4)
+COURSES_REGULAR = {
+    '1': 'course_1',
+    '2': 'course_2',
+    '3': 'course_3',
+    '4': 'course_4'
+}
+
+# Magistratura uchun kurslar (1-2 mag)
+COURSES_MAGISTR = {
+    'mag1': 'course_mag1',
+    'mag2': 'course_mag2'
 }
 
 # Murojaat turlari
 COMPLAINT_TYPES = {
-    "👨‍🏫 O'qituvchi haqida": 'teacher',
-    "💻 Texnik-taminot": 'technical',
-    "📖 Dars jarayoni": 'lesson'
+    'teacher': 'comp_teacher',
+    'technical': 'comp_technical',
+    'lesson': 'comp_lesson'
 }
 
 # So'rovnoma havolalari

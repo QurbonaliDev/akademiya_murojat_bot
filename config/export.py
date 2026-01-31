@@ -22,8 +22,11 @@ def export_to_excel():
         df = pd.read_sql_query('''
             SELECT 
                 id as "ID",
+                faculty as "Fakultet",
                 direction as "Yo'nalish",
-                course as "Kurs", 
+                course as "Kurs",
+                education_type as "Talim turi",
+                education_lang as "Talim tili",
                 complaint_type as "Murojaat turi",
                 subject_name as "Fan nomi",
                 teacher_name as "O'qituvchi",
