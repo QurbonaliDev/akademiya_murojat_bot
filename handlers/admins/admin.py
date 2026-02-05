@@ -4,10 +4,13 @@
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
-from keyboards.keyboards import get_admin_keyboard, get_export_menu_keyboard
+from keyboards.keyboards import get_admin_keyboard, get_export_menu_keyboard, get_settings_keyboard
 from utils.utils import is_admin, get_direction_name, get_course_name, get_complaint_type_name, get_faculty_name, get_text
 from database import get_all_complaints, get_statistics
 from config.export import export_to_excel , export_to_excel_for_lesson_ratings
+
+# CRUD settings importlari
+from handlers.admins.crud_settings import show_settings_menu
 
 logger = logging.getLogger(__name__)
 

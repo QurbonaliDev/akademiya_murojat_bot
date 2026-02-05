@@ -33,6 +33,11 @@ def init_database():
 
     conn.commit()
     conn.close()
+    
+    # Dinamik konfiguratsiya jadvallarini yaratish va default ma'lumotlarni yuklash
+    from database_models import init_dynamic_config
+    init_dynamic_config()
+    
     logger.info("Ma'lumotlar bazasi muvaffaqiyatli yaratildi")
 
 def init_lesson_rating_table():

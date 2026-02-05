@@ -72,7 +72,18 @@ from handlers.admins.admin import (
     export_to_excel_handler,
     export_to_daily_lesson_excel_handler,
     show_dashboard,
-    show_export_menu # <--- ADDED
+    show_export_menu,
+    show_settings_menu  # YANGI
+)
+from handlers.admins.crud_settings import (
+    show_admins_menu, list_admins, prompt_add_admin, handle_add_admin_id, handle_add_admin_name,
+    prompt_delete_admin, handle_delete_admin,
+    show_faculties_menu, list_faculties, prompt_add_faculty, handle_add_faculty_code, handle_add_faculty_name,
+    prompt_delete_faculty, handle_delete_faculty,
+    show_directions_menu, list_directions, prompt_add_direction, handle_add_direction_code,
+    handle_add_direction_faculty, handle_add_direction_name, prompt_delete_direction, handle_delete_direction,
+    show_questions_menu, list_questions, prompt_add_question, handle_add_question_text, handle_add_question_type,
+    prompt_delete_question, handle_delete_question
 )
 
 # Logging sozlash
@@ -371,6 +382,9 @@ async def handle_admin_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == get_text('btn_dashboard', context):
         await show_dashboard(update, context)
     
+    elif text == get_text('btn_settings', context):
+        await show_settings_menu(update, context)
+    
     elif text == get_text('btn_back_main', context):
         await start(update, context)
 
@@ -388,6 +402,96 @@ async def handle_admin_export_flow(update: Update, context: ContextTypes.DEFAULT
     elif text == get_text('btn_back', context):
         await show_admin_panel(update, context)
 
+
+# ============================================
+# CRUD FLOW HANDLERS
+# ============================================
+
+async def handle_settings_menu_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Sozlamalar menyusi oqimi"""
+    if not is_admin(update.effective_user.id):
+        return
+    
+    text = update.message.text
+    
+    if text == get_text('btn_manage_admins', context):
+        await show_admins_menu(update, context)
+    elif text == get_text('btn_manage_faculties', context):
+        await show_faculties_menu(update, context)
+    elif text == get_text('btn_manage_directions', context):
+        await show_directions_menu(update, context)
+    elif text == get_text('btn_manage_questions', context):
+        await show_questions_menu(update, context)
+    elif text == get_text('btn_back', context):
+        await show_admin_panel(update, context)
+
+
+async def handle_admins_crud_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Adminlar CRUD oqimi"""
+    if not is_admin(update.effective_user.id):
+        return
+    
+    text = update.message.text
+    
+    if text == get_text('btn_add', context):
+        await prompt_add_admin(update, context)
+    elif text == get_text('btn_list', context):
+        await list_admins(update, context)
+    elif text == get_text('btn_delete', context):
+        await prompt_delete_admin(update, context)
+    elif text == get_text('btn_back', context):
+        await show_settings_menu(update, context)
+
+
+async def handle_faculties_crud_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Fakultetlar CRUD oqimi"""
+    if not is_admin(update.effective_user.id):
+        return
+    
+    text = update.message.text
+    
+    if text == get_text('btn_add', context):
+        await prompt_add_faculty(update, context)
+    elif text == get_text('btn_list', context):
+        await list_faculties(update, context)
+    elif text == get_text('btn_delete', context):
+        await prompt_delete_faculty(update, context)
+    elif text == get_text('btn_back', context):
+        await show_settings_menu(update, context)
+
+
+async def handle_directions_crud_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Yo'nalishlar CRUD oqimi"""
+    if not is_admin(update.effective_user.id):
+        return
+    
+    text = update.message.text
+    
+    if text == get_text('btn_add', context):
+        await prompt_add_direction(update, context)
+    elif text == get_text('btn_list', context):
+        await list_directions(update, context)
+    elif text == get_text('btn_delete', context):
+        await prompt_delete_direction(update, context)
+    elif text == get_text('btn_back', context):
+        await show_settings_menu(update, context)
+
+
+async def handle_questions_crud_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Savollar CRUD oqimi"""
+    if not is_admin(update.effective_user.id):
+        return
+    
+    text = update.message.text
+    
+    if text == get_text('btn_add', context):
+        await prompt_add_question(update, context)
+    elif text == get_text('btn_list', context):
+        await list_questions(update, context)
+    elif text == get_text('btn_delete', context):
+        await prompt_delete_question(update, context)
+    elif text == get_text('btn_back', context):
+        await show_settings_menu(update, context)
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Barcha matnli xabarlarni boshqarish"""
@@ -439,6 +543,74 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await handle_admin_export_flow(update, context)
         return
 
+    # ============================================
+    # CRUD SETTINGS STATES
+    # ============================================
+    
+    # Sozlamalar menyusi
+    if state == 'settings_menu':
+        await handle_settings_menu_flow(update, context)
+        return
+    
+    # Admin CRUD
+    if state == 'admins_menu':
+        await handle_admins_crud_flow(update, context)
+        return
+    if state == 'adding_admin_id':
+        await handle_add_admin_id(update, context)
+        return
+    if state == 'adding_admin_name':
+        await handle_add_admin_name(update, context)
+        return
+    if state == 'deleting_admin':
+        await handle_delete_admin(update, context)
+        return
+    
+    # Faculty CRUD
+    if state == 'faculties_menu':
+        await handle_faculties_crud_flow(update, context)
+        return
+    if state == 'adding_faculty_code':
+        await handle_add_faculty_code(update, context)
+        return
+    if state == 'adding_faculty_name':
+        await handle_add_faculty_name(update, context)
+        return
+    if state == 'deleting_faculty':
+        await handle_delete_faculty(update, context)
+        return
+    
+    # Direction CRUD
+    if state == 'directions_menu':
+        await handle_directions_crud_flow(update, context)
+        return
+    if state == 'adding_direction_code':
+        await handle_add_direction_code(update, context)
+        return
+    if state == 'adding_direction_faculty':
+        await handle_add_direction_faculty(update, context)
+        return
+    if state == 'adding_direction_name':
+        await handle_add_direction_name(update, context)
+        return
+    if state == 'deleting_direction':
+        await handle_delete_direction(update, context)
+        return
+    
+    # Question CRUD
+    if state == 'questions_menu':
+        await handle_questions_crud_flow(update, context)
+        return
+    if state == 'adding_question_text':
+        await handle_add_question_text(update, context)
+        return
+    if state == 'adding_question_type':
+        await handle_add_question_type(update, context)
+        return
+    if state == 'deleting_question':
+        await handle_delete_question(update, context)
+        return
+
     # Kunlik darsni baholash jarayoni
     if state == 'rating_direction':
         await handle_lesson_direction_choice(update, context)
@@ -471,8 +643,15 @@ def main():
     init_database()
     logger.info("Ma'lumotlar bazasi ishga tushirildi")
 
-    # Bot applicationni yaratish
-    application = Application.builder().token(BOT_TOKEN).build()
+    # Bot applicationni yaratish - timeout sozlamalari bilan
+    application = (
+        Application.builder()
+        .token(BOT_TOKEN)
+        .connect_timeout(30.0)
+        .read_timeout(30.0)
+        .write_timeout(30.0)
+        .build()
+    )
 
     # Command handlerlar
     application.add_handler(CommandHandler("start", start))
@@ -483,7 +662,10 @@ def main():
 
     # Botni ishga tushirish
     logger.info("Bot ishga tushmoqda...")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    application.run_polling(
+        allowed_updates=Update.ALL_TYPES,
+        drop_pending_updates=True  # Eski xabarlarni o'chirish
+    )
 
 if __name__ == '__main__':
     main()
