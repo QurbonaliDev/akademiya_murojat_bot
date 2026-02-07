@@ -1,9 +1,10 @@
 # export.py
-# Excel va CSV export funksiyalari (rangli dizayn bilan)
+# Excel export funksiyalari (Professional ko'k dizayn bilan)
 
 import logging
 import sqlite3
 from datetime import datetime
+import os
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -13,150 +14,129 @@ from config.config import DATABASE_NAME
 
 logger = logging.getLogger(__name__)
 
+# --- Stil konstantalari (Professional ko'k tema) ---
+BLUE_HEADER_FILL = PatternFill("solid", fgColor="1F4E78")  # Professional to'q ko'k
+WHITE_FONT = Font(bold=True, color="FFFFFF")
+THIN_BORDER = Border(
+    left=Side(style='thin', color='BFBFBF'),
+    right=Side(style='thin', color='BFBFBF'),
+    top=Side(style='thin', color='BFBFBF'),
+    bottom=Side(style='thin', color='BFBFBF')
+)
+CENTER_ALIGN = Alignment(horizontal="center", vertical="center", wrap_text=True)
+LEFT_ALIGN = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
+def apply_styling(ws):
+    """Excel varag'iga professional dizayn berish"""
+    # Har bir katakni sozlash
+    for r_idx, row in enumerate(ws.iter_rows(), start=1):
+        for cell in row:
+            cell.border = THIN_BORDER
+            cell.alignment = LEFT_ALIGN
+
+            if r_idx == 1:  # Sarlavha qatori
+                cell.fill = BLUE_HEADER_FILL
+                cell.font = WHITE_FONT
+                cell.alignment = CENTER_ALIGN
+
+    # Ustun kengliklarini avtomatik sozlash
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 4, 50)
+        ws.column_dimensions[column].width = adjusted_width
+
+    # Filtr qo'shish
+    ws.auto_filter.ref = ws.dimensions
 
 def export_to_excel():
-    """Murojaatlarni Excel fayliga eksport qilish (rangli dizayn bilan)"""
+    """Murojaatlarni Excel fayliga eksport qilish"""
     try:
         conn = sqlite3.connect(DATABASE_NAME)
-
+        
+        # Murojaatlarni o'qish
         df = pd.read_sql_query('''
             SELECT 
-                id as "ID",
+                uid as "ID",
+                created_at as "Sana",
+                course as "Kurs",
                 faculty as "Fakultet",
                 direction as "Yo'nalish",
-                course as "Kurs",
-                education_type as "Talim turi",
-                education_lang as "Talim tili",
-                complaint_type as "Murojaat turi",
-                subject_name as "Fan nomi",
+                subject_name as "Fan",
                 teacher_name as "O'qituvchi",
+                complaint_type as "Turi",
                 message as "Xabar",
-                created_at as "Sana"
+                status as "Status"
             FROM complaints 
-            ORDER BY created_at ASC
+            ORDER BY created_at DESC
         ''', conn)
-
         conn.close()
 
-        filename = f"murojaatlar_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.xlsx"
-        df.to_excel(filename, index=False, engine='openpyxl')
+        filename = f"murojaatlar_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        
+        # Excelga saqlash
+        with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Raw_Data')
+            
+            ws = writer.sheets['Raw_Data']
+            apply_styling(ws)
 
-        # === Excel faylni ochamiz va dizayn beramiz ===
-        wb = load_workbook(filename)
-        ws = wb.active
-
-        # --- Stil sozlamalari ---
-        header_fill = PatternFill("solid", fgColor="2E7D32")  # To‘q yashil
-        header_font = Font(bold=True, color="FFFFFF")
-        thin_border = Border(
-            left=Side(style='thin', color='000000'),
-            right=Side(style='thin', color='000000'),
-            top=Side(style='thin', color='000000'),
-            bottom=Side(style='thin', color='000000')
-        )
-
-        # --- Har bir katakni sozlash ---
-        for r_idx, row in enumerate(ws.iter_rows(), start=1):
-            for cell in row:
-                cell.border = thin_border
-                cell.alignment = Alignment(wrap_text=True, vertical="top")
-
-                if r_idx == 1:  # sarlavha qatori
-                    cell.fill = header_fill
-                    cell.font = header_font
-
-        # --- Ustun kengligini avtomatik belgilash ---
-        max_col_width = 40
-        for col in ws.columns:
-            max_length = 0
-            col_letter = col[0].column_letter
-            for cell in col:
-                val = str(cell.value) if cell.value is not None else ""
-                if len(val) > max_length:
-                    max_length = len(val)
-            ws.column_dimensions[col_letter].width = min(max_length + 2, max_col_width)
-
-        # --- Filtr qo‘shish ---
-        ws.auto_filter.ref = ws.dimensions
-
-        wb.save(filename)
-
-        logger.info(f"Excel fayl muvaffaqiyatli rangli tarzda yaratildi: {filename}")
+        logger.info(f"Murojaatlar eksport qilindi: {filename}")
         return filename
 
     except Exception as e:
-        logger.error(f"Excel export xatosi: {e}")
+        logger.error(f"Complaint export xatosi: {e}")
         return None
 
-
 def export_to_excel_for_lesson_ratings():
-    """Dars kunlik baholashni Excel fayliga eksport qilish (rangli dizayn bilan)"""
+    """Dars baholashlarini professional eksport qilish"""
     try:
         conn = sqlite3.connect(DATABASE_NAME)
-
+        
+        # Ma'lumotlarni o'qish (Yangi 1-qatorli strukturadan)
         df = pd.read_sql_query('''
-            SELECT
-                id AS "ID",
-                direction AS "Yo'nalish",
-                course AS "Kurs",
-                subject_name AS "Fan",
-                teacher_name AS "O'qituvchi",
-                question_number AS "Savol raqami",
-                question AS "Savol ",
-                rating AS "Bahosi",
-                created_at AS "Sana"
+            SELECT 
+                uid as "ID",
+                created_at as "Sana",
+                course as "Kurs",
+                faculty as "Fakultet",
+                direction as "Yo'nalish",
+                subject_name as "Fan",
+                teacher_name as "O'qituvchi",
+                q1 as "Savol 1",
+                q2 as "Savol 2",
+                q3 as "Savol 3",
+                q4 as "Savol 4",
+                q5 as "Savol 5",
+                q6 as "Savol 6",
+                total_score as "Umumiy baho",
+                status as "Status"
             FROM lesson_ratings
             ORDER BY created_at DESC
         ''', conn)
-
         conn.close()
 
-        filename = f"lesson_ratings_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.xlsx"
-        df.to_excel(filename, index=False, engine='openpyxl')
+        if df.empty:
+            return None
 
-        # === Excel faylni ichidan sozlash ===
-        wb = load_workbook(filename)
-        ws = wb.active
+        # Bo'sh q7-q10 ustunlarini rasmda yo'qligi uchun chiqarmaymiz
+        
+        filename = f"baholashlar_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        
+        with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Raw_Data')
+            ws = writer.sheets['Raw_Data']
+            apply_styling(ws)
 
-        # --- Stil sozlamalari ---
-        header_fill = PatternFill("solid", fgColor="2E7D32")  # To‘q yashil
-        header_font = Font(bold=True, color="FFFFFF")
-        thin_border = Border(
-            left=Side(style='thin', color='000000'),
-            right=Side(style='thin', color='000000'),
-            top=Side(style='thin', color='000000'),
-            bottom=Side(style='thin', color='000000')
-        )
-
-        # --- Har bir katakni ustida ish ---
-        for r_idx, row in enumerate(ws.iter_rows(), start=1):
-            for cell in row:
-                cell.border = thin_border
-                cell.alignment = Alignment(wrap_text=True, vertical="top")
-
-                if r_idx == 1:  # sarlavha qatori
-                    cell.fill = header_fill
-                    cell.font = header_font
-
-        # --- Ustun kengliklari ---
-        max_col_width = 40
-        for col in ws.columns:
-            max_len = 0
-            col_letter = col[0].column_letter
-            for cell in col:
-                text = str(cell.value) if cell.value else ""
-                if len(text) > max_len:
-                    max_len = len(text)
-            ws.column_dimensions[col_letter].width = min(max_len + 2, max_col_width)
-
-        # --- Filtr qo‘shish ---
-        ws.auto_filter.ref = ws.dimensions
-
-        wb.save(filename)
-
-        logger.info(f"Excel muvaffaqiyatli yaratildi: {filename}")
+        logger.info(f"Baholashlar eksport qilindi: {filename}")
         return filename
 
     except Exception as e:
-        logger.error(f"Excel export xatosi: {e}")
+        logger.error(f"Rating export xatosi: {e}")
         return None

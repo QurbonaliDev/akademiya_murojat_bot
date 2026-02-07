@@ -13,9 +13,11 @@ def init_database():
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
 
+    # 1. Complaints jadvali (Yangi va mukammal struktura)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS complaints (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            uid TEXT,
             faculty TEXT NOT NULL,
             direction TEXT NOT NULL,
             course TEXT NOT NULL,
@@ -25,66 +27,105 @@ def init_database():
             subject_name TEXT,
             teacher_name TEXT,
             message TEXT NOT NULL,
+            source TEXT DEFAULT 'bot',
+            status TEXT DEFAULT 'new',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-
-    init_lesson_rating_table()
+    
+    # Migratsiya: Agar eski baza bo'lsa va yangi ustunlar bo'lmasa qo'shamiz
+    # (Faqat bitta joyda, clean kod uchun)
+    for column, definition in [('uid', 'TEXT'), ('status', "TEXT DEFAULT 'new'"), ('source', "TEXT DEFAULT 'bot'")]:
+        try:
+            cursor.execute(f"ALTER TABLE complaints ADD COLUMN {column} {definition}")
+        except: pass
 
     conn.commit()
     conn.close()
+
+    # 2. Lesson Ratings jadvali
+    init_lesson_rating_table()
     
-    # Dinamik konfiguratsiya jadvallarini yaratish va default ma'lumotlarni yuklash
+    # 3. Dinamik konfiguratsiya jadvallari
     from database_models import init_dynamic_config
     init_dynamic_config()
     
-    logger.info("Ma'lumotlar bazasi muvaffaqiyatli yaratildi")
+    logger.info("Ma'lumotlar bazasi to'liq ishga tushirildi")
 
 def init_lesson_rating_table():
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
 
+    # Jadval bormi yo'qligini tekshirish
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='lesson_ratings'")
+    table_exists = cursor.fetchone()
+
+    if table_exists:
+        # Bor bo'lsa, strukturasini tekshiramiz
+        try:
+            cursor.execute("SELECT q1 FROM lesson_ratings LIMIT 1")
+        except sqlite3.OperationalError:
+            # q1 yo'q ekan, demak eski struktura - uni yangisiga almashtiramiz
+            cursor.execute("DROP TABLE lesson_ratings")
+            logger.info("Eski lesson_ratings jadvali yangisiga almashtirish uchun o'chirildi")
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS lesson_ratings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            uid TEXT,
+            telegram_id INTEGER,
+            faculty TEXT,
             direction TEXT NOT NULL,
             course TEXT NOT NULL,
             subject_name TEXT NOT NULL,
             teacher_name TEXT NOT NULL,
-            question_number INTEGER NOT NULL,
-            question TEXT NOT NULL,
-            rating INTEGER NOT NULL,
+            q1 TEXT, q2 TEXT, q3 TEXT, q4 TEXT, q5 TEXT, 
+            q6 TEXT, q7 TEXT, q8 TEXT, q9 TEXT, q10 TEXT,
+            total_score REAL,
+            status TEXT DEFAULT 'new',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-
     conn.commit()
     conn.close()
-    logger.info("Lesson ratings table initialized")
+
+
+import random
+import string
+
+def generate_uid(length=10):
+    """Tasodifiy UID yaratish (Exceldagidek)"""
+    characters = string.ascii_uppercase + string.digits
+    return ''.join(random.choice(characters) for _ in range(length))
 
 def save_complaint(data):
     """Murojaatni bazaga saqlash"""
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
 
+    uid = generate_uid()
+
     cursor.execute('''
-        INSERT INTO complaints (faculty, direction, course, education_type, education_lang, complaint_type, subject_name, teacher_name, message)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO complaints (uid, faculty, direction, course, education_type, education_lang, complaint_type, subject_name, teacher_name, message, source, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
+        uid,
         data['faculty'],
         data['direction'],
         data['course'],
         data.get('education_type', ''),
-        data.get('education_language', ''), # Note: in complaint.py it's 'education_language'
+        data.get('education_language', ''),
         data['complaint_type'],
         data.get('subject_name', ''),
         data.get('teacher_name', ''),
-        data['message']
+        data['message'],
+        data.get('source', 'bot'),
+        'new'
     ))
 
     conn.commit()
     conn.close()
-    logger.info(f"Yangi murojaat saqlandi: {data['complaint_type']}")
+    logger.info(f"Yangi murojaat saqlandi: {uid}")
 
 
 def get_all_complaints(limit=None):
@@ -103,25 +144,57 @@ def get_all_complaints(limit=None):
     return complaints
 
 def save_lesson_rating(data):
+    """Dars bahosini saqlash (Hammasi bitta qatorda)"""
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
 
+    uid = generate_uid()
+    answers = data.get('answers', {})
+    
+    # Fakultetni topish (Yo'nalish kodiga qarab)
+    faculty_code = ""
+    try:
+        cursor.execute("SELECT faculty_code FROM directions WHERE code = ?", (data['direction'],))
+        row = cursor.fetchone()
+        if row:
+            faculty_code = row[0]
+    except: pass
+
+    # Umumiy ballni hisoblash (Faqat raqamli javoblar uchun)
+    scores = []
+    for val in answers.values():
+        try:
+            scores.append(float(val))
+        except: pass
+    total_score = round(sum(scores)/len(scores), 2) if scores else 0
+
     cursor.execute('''
-        INSERT INTO lesson_ratings (direction, course, subject_name, teacher_name, question_number, question, rating)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO lesson_ratings (
+            uid, telegram_id, faculty, direction, course, 
+            subject_name, teacher_name, 
+            q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
+            total_score, status
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
+        uid,
+        data.get('telegram_id'),
+        faculty_code,
         data['direction'],
         data['course'],
         data['subject_name'],
         data['teacher_name'],
-        data['question_number'],
-        data['question'],
-        data['rating']
+        str(answers.get(1, '')), str(answers.get(2, '')), str(answers.get(3, '')), 
+        str(answers.get(4, '')), str(answers.get(5, '')), str(answers.get(6, '')),
+        str(answers.get(7, '')), str(answers.get(8, '')), str(answers.get(9, '')), str(answers.get(10, '')),
+        total_score,
+        'new'
     ))
 
     conn.commit()
     conn.close()
-    logger.info("Yangi dars bahosi saqlandi")
+    logger.info(f"Yangi dars bahosi saqlandi (1-qator): {uid}")
+    return uid
 
 def get_lesson_ratings(limit=None):
     conn = sqlite3.connect(DATABASE_NAME)

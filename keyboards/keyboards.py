@@ -1,7 +1,7 @@
 # keyboards.py
 # ReplyKeyboard klaviaturalari - DINAMIK (bazadan o'qiydi)
 
-from telegram import ReplyKeyboardMarkup, KeyboardButton
+from telegram import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from utils.utils import (
     get_text, get_faculties, get_education_types, get_education_languages,
     get_complaint_types, get_courses, get_regular_courses, get_magistr_courses,
@@ -16,7 +16,7 @@ def get_language_keyboard():
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
-def get_main_menu_keyboard(context):
+def get_main_menu_keyboard(context, webapp_url=None):
     """Asosiy menyu klaviaturasi (Dinamik)"""
     keyboard = [
         [KeyboardButton(get_text('btn_complaint', context))],
@@ -26,6 +26,14 @@ def get_main_menu_keyboard(context):
         [KeyboardButton(get_text('btn_admin', context))],
         [KeyboardButton(get_text('btn_lang', context))]
     ]
+    
+    # Mini App tugmasini qo'shish (agar URL mavjud bo'lsa)
+    if webapp_url:
+        keyboard.insert(0, [KeyboardButton(
+            text="🌐 Mini App",
+            web_app=WebAppInfo(url=webapp_url)
+        )])
+    
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 

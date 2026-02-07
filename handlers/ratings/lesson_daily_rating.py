@@ -15,6 +15,7 @@ from utils.utils import (
     get_all_directions,
     get_courses
 )
+from config.config import ALL_DIRECTIONS, COURSES, FACULTIES
 from database import save_lesson_rating
 
 
@@ -70,8 +71,7 @@ async def handle_lesson_direction_choice(update: Update, context: ContextTypes.D
         from main import start
         return await start(update, context)
 
-    # ALL_DIRECTIONS dan topamiz
-    from config.config import ALL_DIRECTIONS
+    # ALL_DIRECTIONS yuqorida import qilingan
     direction_code = get_code_by_text(direction_text, ALL_DIRECTIONS, context)
 
     if direction_code:
@@ -100,6 +100,7 @@ async def handle_lesson_course_choice(update: Update, context: ContextTypes.DEFA
             reply_markup=get_directions_keyboard(context)
         )
 
+    # COURSES yuqorida import qilingan
     course_code = get_code_by_text(course_text, COURSES, context)
 
     if course_code:
@@ -194,33 +195,16 @@ async def handle_rating(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"⚠️ {get_text('error_yes_no', context)}",
                 reply_markup=get_yes_no_keyboard(context)
             )
-
-        # Javobni saqlaymiz
-        save_lesson_rating({
-            'direction': context.user_data.get('direction', ''),
-            'course': context.user_data.get('course', ''),
-            'subject_name': context.user_data.get('subject_name', ''),
-            'teacher_name': context.user_data.get('teacher_name', ''),
-            'question_number': current_question['number'],
-            'question': current_question['text'],
-            'rating': rating_text
-        })
     else:
         # Scale turi - 1-5 ball
         if rating_text not in ["1", "2", "3", "4", "5"]:
             return await update.message.reply_text(get_text('error_select_number', context))
 
-        rating = int(rating_text)
-
-        save_lesson_rating({
-            'direction': context.user_data['direction'],
-            'course': context.user_data['course'],
-            'subject_name': context.user_data['subject_name'],
-            'teacher_name': context.user_data['teacher_name'],
-            'question_number': current_question['number'],
-            'question': current_question['text'],
-            'rating': rating
-        })
+    # Javobni vaqtinchalik saqlaymiz
+    if 'answers' not in context.user_data:
+        context.user_data['answers'] = {}
+    
+    context.user_data['answers'][current_question['number']] = rating_text
 
     # Keyingi savolga o'tish
     context.user_data['question_index'] += 1
@@ -228,11 +212,21 @@ async def handle_rating(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Agar savollar tugasa
     if next_idx >= len(questions):
+        # Hammasini bittada saqlash
+        save_lesson_rating({
+            'telegram_id': update.effective_user.id,
+            'direction': context.user_data.get('direction', ''),
+            'course': context.user_data.get('course', ''),
+            'subject_name': context.user_data.get('subject_name', ''),
+            'teacher_name': context.user_data.get('teacher_name', ''),
+            'answers': context.user_data['answers']
+        })
+
         await update.message.reply_text(
             get_text('rating_thanks', context),
             reply_markup=get_main_menu_keyboard(context)
         )
-        keys_to_remove = ['state', 'direction', 'course', 'subject_name', 'teacher_name', 'question_index']
+        keys_to_remove = ['state', 'direction', 'course', 'subject_name', 'teacher_name', 'question_index', 'answers']
         for key in keys_to_remove:
             context.user_data.pop(key, None)
         return

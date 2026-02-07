@@ -220,7 +220,7 @@ def create_dynamic_tables():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS rating_questions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            question_number INTEGER NOT NULL,
+            question_number INTEGER UNIQUE NOT NULL,
             translation_key TEXT NOT NULL,
             answer_type TEXT DEFAULT 'scale',
             is_active INTEGER DEFAULT 1
@@ -313,7 +313,11 @@ def seed_default_data():
             VALUES (?, ?, ?, ?, ?)
         ''', (code, translation_key, requires_subject, requires_teacher, is_active))
 
-    # Rating questions
+    # Rating questions (Cleanup duplicates before seeding)
+    try:
+        cursor.execute("DELETE FROM rating_questions WHERE rowid NOT IN (SELECT mn FROM (SELECT MIN(rowid) as mn FROM rating_questions GROUP BY question_number))")
+    except: pass
+
     for question_number, translation_key, answer_type, is_active in DEFAULT_RATING_QUESTIONS:
         cursor.execute('''
             INSERT OR IGNORE INTO rating_questions (question_number, translation_key, answer_type, is_active)

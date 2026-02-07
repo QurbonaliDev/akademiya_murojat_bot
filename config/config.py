@@ -1,10 +1,16 @@
-# config.py
-# Bot sozlamalari va konstantalar
+import os
+from dotenv import load_dotenv
 
-BOT_TOKEN = "8136137840:AAF7_Wf9KU2epPkGKdsijfdx6zIwNzPVfc8"
-ADMIN_IDS = [2015170305,1370651372]
+load_dotenv()
+
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8136137840:AAF7_Wf9KU2epPkGKdsijfdx6zIwNzPVfc8")
+ADMIN_IDS_STR = os.environ.get("ADMIN_IDS", "2015170305,1370651372")
+ADMIN_IDS = [int(i.strip()) for i in ADMIN_IDS_STR.split(",") if i.strip()]
 
 DATABASE_NAME = 'education_system.db'
+
+# Mini App URL (HTTPS kerak Telegram uchun)
+WEBAPP_URL = os.environ.get("WEBAPP_URL", None)
 
 SELECTED_LANGUAGE = 'uz'
 

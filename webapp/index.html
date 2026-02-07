@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Akademiya Murojaat</title>
+    
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="header-title">📚 Akademiya Murojaat</h1>
+            <p class="header-subtitle" id="headerSubtitle">Murojaat yuborish</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            
+            <!-- Home View -->
+            <section id="homeView" class="view active">
+                <div class="menu-grid">
+                    <button class="menu-card" onclick="showView('complaintView')">
+                        <span class="menu-icon">📝</span>
+                        <span class="menu-text" data-i18n="btn_complaint">Murojaat qoldirish</span>
+                    </button>
+                    <button class="menu-card" onclick="showView('rulesView')">
+                        <span class="menu-icon">📋</span>
+                        <span class="menu-text" data-i18n="btn_rules">Tartib qoidalar</span>
+                    </button>
+                    <button class="menu-card" onclick="showView('surveyView')">
+                        <span class="menu-icon">📊</span>
+                        <span class="menu-text" data-i18n="btn_survey">So'rovnomalar</span>
+                    </button>
+                    <button class="menu-card" onclick="showView('ratingView')">
+                        <span class="menu-icon">⭐</span>
+                        <span class="menu-text" data-i18n="btn_lesson_rating">Dars baholash</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Complaint Form View -->
+            <section id="complaintView" class="view">
+                <form id="complaintForm" class="form">
+                    <!-- Step 1: Faculty -->
+                    <div class="form-step active" id="step1">
+                        <label class="form-label" data-i18n="choose_faculty">Fakultetni tanlang</label>
+                        <div id="facultyButtons" class="button-group"></div>
+                    </div>
+
+                    <!-- Step 2: Direction -->
+                    <div class="form-step" id="step2">
+                        <label class="form-label" data-i18n="choose_direction">Yo'nalishni tanlang</label>
+                        <div id="directionButtons" class="button-group"></div>
+                    </div>
+
+                    <!-- Step 3: Education Type (not for magistratura) -->
+                    <div class="form-step" id="step3">
+                        <label class="form-label" data-i18n="choose_edu_type">Ta'lim turini tanlang</label>
+                        <div id="eduTypeButtons" class="button-group"></div>
+                    </div>
+
+                    <!-- Step 4: Education Language -->
+                    <div class="form-step" id="step4">
+                        <label class="form-label" data-i18n="choose_edu_lang">Ta'lim tilini tanlang</label>
+                        <div id="eduLangButtons" class="button-group"></div>
+                    </div>
+
+                    <!-- Step 5: Course -->
+                    <div class="form-step" id="step5">
+                        <label class="form-label" data-i18n="choose_course">Kursni tanlang</label>
+                        <div id="courseButtons" class="button-group"></div>
+                    </div>
+
+                    <!-- Step 6: Complaint Type -->
+                    <div class="form-step" id="step6">
+                        <label class="form-label" data-i18n="choose_complaint_type">Murojaat turini tanlang</label>
+                        <div id="complaintTypeButtons" class="button-group"></div>
+                    </div>
+
+                    <!-- Step 7: Subject & Teacher (conditional) -->
+                    <div class="form-step" id="step7">
+                        <div id="subjectField" class="form-group">
+                            <label class="form-label" data-i18n="enter_subject">Fan nomini kiriting</label>
+                            <input type="text" id="subjectInput" class="form-input" placeholder="Masalan: Matematika">
+                        </div>
+                        <div id="teacherField" class="form-group" style="margin-top: 16px;">
+                            <label class="form-label" data-i18n="enter_teacher">O'qituvchi ismini kiriting</label>
+                            <input type="text" id="teacherInput" class="form-input" placeholder="Masalan: Aliyev A.A.">
+                        </div>
+                    </div>
+
+                    <!-- Step 8: Message -->
+                    <div class="form-step" id="step8">
+                        <label class="form-label" data-i18n="enter_message">Xabaringizni yozing</label>
+                        <div class="anonymous-notice" data-i18n="anonymous_notice">
+                            🔒 Sizning murojaatingiz anonim yuboriladi
+                        </div>
+                        <textarea id="messageInput" class="form-textarea" rows="5" placeholder="Murojaatingizni bu yerga yozing..."></textarea>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="form-nav">
+                        <button type="button" class="btn btn-secondary" id="backBtn" onclick="prevStep()" style="display: none;">
+                            <span data-i18n="btn_back">⬅️ Orqaga</span>
+                        </button>
+                        <button type="button" class="btn btn-primary" id="nextBtn" onclick="nextStep()" style="display: none;">
+                            <span data-i18n="btn_next">Keyingi ➡️</span>
+                        </button>
+                        <button type="submit" class="btn btn-success" id="submitBtn" style="display: none;">
+                            <span data-i18n="btn_submit">✅ Yuborish</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Rules View -->
+            <section id="rulesView" class="view">
+                <div class="rules-list">
+                    <div class="rules-card" onclick="showRuleDetail('grading')">
+                        <span class="rules-icon">📊</span>
+                        <span class="rules-text" data-i18n="btn_grading">Baholash tizimi</span>
+                    </div>
+                    <div class="rules-card" onclick="showRuleDetail('exam')">
+                        <span class="rules-icon">📝</span>
+                        <span class="rules-text" data-i18n="btn_exam">Imtihon tartibi</span>
+                    </div>
+                    <div class="rules-card" onclick="showRuleDetail('general')">
+                        <span class="rules-icon">📋</span>
+                        <span class="rules-text" data-i18n="btn_general">Umumiy qoidalar</span>
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-full" onclick="showView('homeView')">
+                    <span data-i18n="btn_back">⬅️ Orqaga</span>
+                </button>
+            </section>
+
+            <!-- Survey View -->
+            <section id="surveyView" class="view">
+                <div class="survey-list">
+                    <a href="#" class="survey-card" id="surveyTeachers">
+                        <span class="survey-icon">👨‍🏫</span>
+                        <span class="survey-text" data-i18n="btn_survey_teachers">O'qituvchilar so'rovnomasi</span>
+                    </a>
+                    <a href="#" class="survey-card" id="surveyEducation">
+                        <span class="survey-icon">🎓</span>
+                        <span class="survey-text" data-i18n="btn_survey_edu">Ta'lim sifati so'rovnomasi</span>
+                    </a>
+                    <a href="#" class="survey-card" id="surveyEmployers">
+                        <span class="survey-icon">💼</span>
+                        <span class="survey-text" data-i18n="btn_survey_emp">Ish beruvchilar so'rovnomasi</span>
+                    </a>
+                </div>
+                <button class="btn btn-secondary btn-full" onclick="showView('homeView')">
+                    <span data-i18n="btn_back">⬅️ Orqaga</span>
+                </button>
+            </section>
+
+            <!-- Rating View (placeholder) -->
+            <section id="ratingView" class="view">
+                <div class="placeholder-content">
+                    <span class="placeholder-icon">⭐</span>
+                    <p>Dars baholash tez orada!</p>
+                </div>
+                <button class="btn btn-secondary btn-full" onclick="showView('homeView')">
+                    <span data-i18n="btn_back">⬅️ Orqaga</span>
+                </button>
+            </section>
+
+            <!-- Success View -->
+            <section id="successView" class="view">
+                <div class="success-content">
+                    <span class="success-icon">✅</span>
+                    <h2 class="success-title" data-i18n="complaint_accepted">Murojaatingiz qabul qilindi!</h2>
+                    <p class="success-text">Rahmat! Sizning murojaatingiz ko'rib chiqiladi.</p>
+                </div>
+                <button class="btn btn-primary btn-full" onclick="resetForm()">
+                    <span data-i18n="btn_back_main">🏠 Bosh menyu</span>
+                </button>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/app.js"></script>
+</body>
+</html>

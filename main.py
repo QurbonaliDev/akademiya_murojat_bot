@@ -7,7 +7,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 
 # Import qilish
 # Import qilish
-from config.config import BOT_TOKEN, LANGS
+from config.config import BOT_TOKEN, LANGS, WEBAPP_URL
 from database import init_database
 from keyboards.keyboards import (
     get_main_menu_keyboard,
@@ -110,7 +110,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         welcome_text,
-        reply_markup=get_main_menu_keyboard(context)
+        reply_markup=get_main_menu_keyboard(context, webapp_url=WEBAPP_URL)
     )
 
 
@@ -639,6 +639,9 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     """Asosiy funksiya - botni ishga tushirish"""
+    import asyncio
+    from web_server import start_web_server
+    
     # Ma'lumotlar bazasini yaratish
     init_database()
     logger.info("Ma'lumotlar bazasi ishga tushirildi")
@@ -660,12 +663,40 @@ def main():
     # Message handler
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
-    # Botni ishga tushirish
-    logger.info("Bot ishga tushmoqda...")
-    application.run_polling(
-        allowed_updates=Update.ALL_TYPES,
-        drop_pending_updates=True  # Eski xabarlarni o'chirish
-    )
+    # Botni va web serverni birgalikda ishga tushirish
+    async def run_all():
+        # Portni xostingdan olamiz (faqat bittasini ishlatish kerak, masalan Render'da PORT beriladi)
+        import os
+        port = int(os.environ.get('PORT', 8085))
+        
+        # Web serverni ishga tushirish
+        runner = await start_web_server(host='0.0.0.0', port=port)
+        logger.info(f"Mini App web server {port} portda ishga tushdi")
+        
+        # Botni ishga tushirish
+        await application.initialize()
+        await application.start()
+        await application.updater.start_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True
+        )
+        logger.info("Bot ishga tushdi...")
+        
+        # Mantiqiy to'xtatish uchun singal kutamiz
+        try:
+            while True:
+                await asyncio.sleep(3600)  # 1 soat kutamiz
+        except (KeyboardInterrupt, SystemExit):
+            pass
+        finally:
+            await application.updater.stop()
+            await application.stop()
+            await application.shutdown()
+            await runner.cleanup()
+
+    # Asosiy tsiklni ishga tushirish
+    logger.info("Bot va Mini App serveri ishga tushmoqda...")
+    asyncio.run(run_all())
 
 if __name__ == '__main__':
     main()
