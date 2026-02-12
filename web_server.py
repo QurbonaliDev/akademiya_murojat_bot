@@ -36,12 +36,22 @@ def get_db_connection():
 
 
 def get_translations(lang_code='uz'):
-    """Tarjimalarni olish"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT key, value FROM translations WHERE language_code = ?', (lang_code,))
-    translations = {row[0]: row[1] for row in cursor.fetchall()}
-    conn.close()
+    """Tarjimalarni olish (Bazadan + LOCALES fallback)"""
+    from config.locales import LOCALES
+    # Boshlang'ich tarjimalar locales.py dan
+    translations = LOCALES.get(lang_code, LOCALES.get('uz', {})).copy()
+    
+    # Bazadan yuklash va ustiga yozish (agar mavjud bo'lsa)
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT key, value FROM translations WHERE language_code = ?', (lang_code,))
+        for key, value in cursor.fetchall():
+            translations[key] = value
+        conn.close()
+    except Exception as e:
+        logger.error(f"Error fetching translations from DB: {e}")
+        
     return translations
 
 

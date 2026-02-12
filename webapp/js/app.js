@@ -36,6 +36,10 @@ async function initApp() {
     try {
         await fetchConfig();
         applyTranslations();
+        // Update header lang text
+        const langDisplay = document.getElementById('currentLang');
+        if (langDisplay) langDisplay.textContent = state.lang.toUpperCase();
+
         hideSkeleton();
         showView('homeView', false); // Initial view without heavy animation
     } catch (err) {
@@ -88,6 +92,10 @@ function applyTranslations() {
         const key = el.getAttribute('data-i18n-placeholder');
         el.placeholder = t(key);
     });
+
+    // Update current lang display again just in case
+    const langDisplay = document.getElementById('currentLang');
+    if (langDisplay) langDisplay.textContent = state.lang.toUpperCase();
 }
 
 /**
