@@ -1,32 +1,45 @@
-/* style.css - Mini App uslublari */
+/* style.css - Mini App Premium Styles */
 
 /* ============================================
-   CSS Variables (Telegram uslubi)
+   CSS Variables (Premium Theme)
    ============================================ */
 :root {
     /* Colors */
-    --tg-theme-bg-color: #ffffff;
-    --tg-theme-text-color: #000000;
-    --tg-theme-hint-color: #999999;
-    --tg-theme-link-color: #2481cc;
-    --tg-theme-button-color: #2481cc;
-    --tg-theme-button-text-color: #ffffff;
-    --tg-theme-secondary-bg-color: #f0f0f0;
-    
-    /* Custom colors */
-    --success-color: #34c759;
-    --warning-color: #ff9500;
-    --error-color: #ff3b30;
-    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    --border-radius: 12px;
-    --border-radius-sm: 8px;
-    
-    /* Spacing */
+    --primary-gradient: linear-gradient(135deg, #0088cc, #005580);
+    --secondary-gradient: linear-gradient(135deg, #f0f2f5, #e0e4e8);
+    --accent-color: #0088cc;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --error-color: #dc3545;
+
+    /* Telegram Theme Overrides */
+    --bg-color: var(--tg-theme-bg-color, #ffffff);
+    --text-color: var(--tg-theme-text-color, #000000);
+    --hint-color: var(--tg-theme-hint-color, #999999);
+    --link-color: var(--tg-theme-link-color, #0088cc);
+    --button-color: var(--tg-theme-button-color, #0088cc);
+    --button-text-color: var(--tg-theme-button-text-color, #ffffff);
+    --secondary-bg: var(--tg-theme-secondary-bg-color, #f0f2f5);
+
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+
+    /* Dimensions */
+    --border-radius-lg: 20px;
+    --border-radius-md: 16px;
+    --border-radius-sm: 12px;
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 16px;
     --spacing-lg: 24px;
     --spacing-xl: 32px;
+}
+
+[data-theme='dark'] {
+    --glass-bg: rgba(28, 28, 30, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 /* ============================================
@@ -36,71 +49,146 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--tg-theme-bg-color);
-    color: var(--tg-theme-text-color);
-    line-height: 1.5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
     min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom);
     overflow-x: hidden;
 }
 
 #app {
-    max-width: 100%;
+    max-width: 500px;
     margin: 0 auto;
-    padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* ============================================
    Header
    ============================================ */
 .header {
-    background: linear-gradient(135deg, var(--tg-theme-button-color), #1a6cb3);
-    color: var(--tg-theme-button-text-color);
+    background: var(--primary-gradient);
+    color: white;
     padding: var(--spacing-lg) var(--spacing-md);
-    text-align: center;
+    border-radius: 0 0 24px 24px;
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
 }
 
 .header-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: var(--spacing-xs);
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
 }
 
 .header-subtitle {
     font-size: 0.9rem;
-    opacity: 0.9;
+    opacity: 0.85;
+    font-weight: 400;
+}
+
+/* Actions & Lang Menu */
+.header-actions {
+    position: relative;
+}
+
+.action-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+}
+
+.lang-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--bg-color);
+    border-radius: var(--border-radius-sm);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 120px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lang-menu.active {
+    display: flex;
+    animation: scaleIn 0.2s ease;
+}
+
+.lang-item {
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    color: var(--text-color);
+    text-align: left;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.lang-item:hover {
+    background: var(--secondary-bg);
 }
 
 /* ============================================
-   Main Content
+   Transitions
    ============================================ */
-.main-content {
-    padding: var(--spacing-md);
-}
-
-/* Views */
 .view {
     display: none;
-    animation: fadeIn 0.3s ease;
+    padding: var(--spacing-md);
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .view.active {
     display: block;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 /* ============================================
-   Home Menu
+   Home Menu Grid
    ============================================ */
 .menu-grid {
     display: grid;
@@ -109,275 +197,319 @@ body {
 }
 
 .menu-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg) var(--spacing-md);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: var(--spacing-lg);
-    background: var(--tg-theme-secondary-bg-color);
-    border: none;
-    border-radius: var(--border-radius);
+    transition: all 0.3s ease;
     cursor: pointer;
-    transition: all 0.2s ease;
-    min-height: 120px;
-}
-
-.menu-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--card-shadow);
+    box-shadow: var(--glass-shadow);
 }
 
 .menu-card:active {
-    transform: scale(0.98);
+    transform: scale(0.95);
 }
 
 .menu-icon {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     margin-bottom: var(--spacing-sm);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
 }
 
 .menu-text {
+    font-weight: 600;
     font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--tg-theme-text-color);
     text-align: center;
+    color: var(--text-color);
 }
 
 /* ============================================
-   Form Styles
+   Option Buttons (Steps)
    ============================================ */
-.form {
+.button-group {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: 10px;
 }
 
-.form-step {
-    display: none;
-    animation: slideIn 0.3s ease;
+.option-btn {
+    background: var(--secondary-bg);
+    border: 1px solid transparent;
+    border-radius: var(--border-radius-md);
+    padding: 16px;
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.form-step.active {
-    display: block;
+.option-btn::after {
+    content: '→';
+    opacity: 0.3;
+    transition: transform 0.2s;
 }
 
-@keyframes slideIn {
-    from { opacity: 0; transform: translateX(20px); }
-    to { opacity: 1; transform: translateX(0); }
+.option-btn:hover {
+    border-color: var(--accent-color);
+    background: white;
 }
 
+.option-btn.selected {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
+}
+
+.option-btn.selected::after {
+    opacity: 1;
+    transform: translateX(4px);
+}
+
+/* ============================================
+   Forms & Inputs
+   ============================================ */
 .form-label {
     display: block;
-    font-size: 1rem;
     font-weight: 600;
-    margin-bottom: var(--spacing-md);
-    color: var(--tg-theme-text-color);
-}
-
-.form-group {
-    margin-bottom: var(--spacing-md);
+    font-size: 1.1rem;
+    margin-bottom: var(--spacing-lg);
+    color: var(--text-color);
 }
 
 .form-input,
 .form-textarea {
     width: 100%;
-    padding: var(--spacing-md);
+    background: var(--secondary-bg);
+    border: 2px solid transparent;
+    border-radius: var(--border-radius-md);
+    padding: 16px;
     font-size: 1rem;
-    border: 2px solid var(--tg-theme-secondary-bg-color);
-    border-radius: var(--border-radius-sm);
-    background: var(--tg-theme-bg-color);
-    color: var(--tg-theme-text-color);
-    transition: border-color 0.2s ease;
+    font-family: inherit;
+    color: var(--text-color);
+    transition: all 0.2s;
 }
 
 .form-input:focus,
 .form-textarea:focus {
     outline: none;
-    border-color: var(--tg-theme-button-color);
+    border-color: var(--accent-color);
+    background: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
-.form-textarea {
-    resize: vertical;
-    min-height: 120px;
-}
-
-/* Button Group */
-.button-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-}
-
-.option-btn {
-    display: flex;
-    align-items: center;
-    padding: var(--spacing-md);
-    background: var(--tg-theme-secondary-bg-color);
-    border: 2px solid transparent;
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 1rem;
-    color: var(--tg-theme-text-color);
-}
-
-.option-btn:hover {
-    background: var(--tg-theme-bg-color);
-    border-color: var(--tg-theme-button-color);
-}
-
-.option-btn.selected {
-    background: var(--tg-theme-button-color);
-    color: var(--tg-theme-button-text-color);
-    border-color: var(--tg-theme-button-color);
-}
-
-/* Anonymous Notice */
 .anonymous-notice {
-    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid rgba(40, 167, 69, 0.2);
     color: #2e7d32;
-    padding: var(--spacing-md);
+    padding: 12px;
     border-radius: var(--border-radius-sm);
     margin-bottom: var(--spacing-md);
-    font-size: 0.9rem;
-    text-align: center;
-}
-
-/* Form Navigation */
-.form-nav {
+    font-size: 0.85rem;
     display: flex;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-lg);
+    align-items: center;
+    gap: 8px;
 }
 
 /* ============================================
-   Buttons
+   Navigation Buttons
    ============================================ */
+.form-nav {
+    display: flex;
+    gap: 12px;
+    margin-top: var(--spacing-xl);
+}
+
 .btn {
-    display: inline-flex;
+    height: 56px;
+    border-radius: var(--border-radius-md);
+    border: none;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--spacing-md) var(--spacing-lg);
-    font-size: 1rem;
-    font-weight: 600;
-    border: none;
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    transition: all 0.2s ease;
     flex: 1;
 }
 
 .btn-primary {
-    background: var(--tg-theme-button-color);
-    color: var(--tg-theme-button-text-color);
-}
-
-.btn-primary:hover {
-    opacity: 0.9;
+    background: var(--button-color);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
 }
 
 .btn-secondary {
-    background: var(--tg-theme-secondary-bg-color);
-    color: var(--tg-theme-text-color);
+    background: var(--secondary-bg);
+    color: var(--text-color);
 }
 
 .btn-success {
     background: var(--success-color);
     color: white;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
 }
 
-.btn-full {
-    width: 100%;
-    margin-top: var(--spacing-lg);
-}
-
-.btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.btn:active {
+    transform: scale(0.97);
 }
 
 /* ============================================
-   Rules & Survey Cards
+   Rating System
+   ============================================ */
+.question-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.question-item {
+    background: var(--glass-bg);
+    border-radius: var(--border-radius-md);
+    padding: 20px;
+    box-shadow: var(--glass-shadow);
+}
+
+.question-text {
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: block;
+}
+
+.rating-options {
+    display: flex;
+    justify-content: space-between;
+}
+
+.rating-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--secondary-bg);
+    background: white;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rating-btn.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 10px rgba(0, 136, 204, 0.4);
+}
+
+/* ============================================
+   Rules & Surveys
    ============================================ */
 .rules-list,
 .survey-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
+    display: grid;
+    gap: 12px;
 }
 
-.rules-card,
+.rule-card,
 .survey-card {
+    background: var(--secondary-bg);
+    padding: 20px;
+    border-radius: var(--border-radius-md);
     display: flex;
     align-items: center;
-    padding: var(--spacing-md);
-    background: var(--tg-theme-secondary-bg-color);
-    border-radius: var(--border-radius-sm);
+    gap: 16px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: 0.2s;
     text-decoration: none;
-    color: var(--tg-theme-text-color);
+    color: inherit;
 }
 
-.rules-card:hover,
+.rule-card:hover,
 .survey-card:hover {
-    background: var(--tg-theme-bg-color);
-    box-shadow: var(--card-shadow);
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
 }
 
-.rules-icon,
+.rule-icon,
 .survey-icon {
     font-size: 1.5rem;
-    margin-right: var(--spacing-md);
 }
 
-.rules-text,
-.survey-text {
-    font-size: 1rem;
-    font-weight: 500;
+.rule-info,
+.survey-info {
+    flex: 1;
 }
 
-/* ============================================
-   Success View
-   ============================================ */
-.success-content {
-    text-align: center;
-    padding: var(--spacing-xl);
-}
-
-.success-icon {
-    font-size: 4rem;
+.rule-title,
+.survey-title {
+    font-weight: 600;
     display: block;
-    margin-bottom: var(--spacing-lg);
 }
 
-.success-title {
+/* Rule Detail Modal */
+.rule-detail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    align-items: flex-end;
+}
+
+.rule-content {
+    background: var(--bg-color);
+    width: 100%;
+    max-height: 80vh;
+    border-radius: 24px 24px 0 0;
+    padding: 30px 20px;
+    position: relative;
+    overflow-y: auto;
+    animation: slideUpModal 0.3s ease-out;
+}
+
+@keyframes slideUpModal {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.rule-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
     font-size: 1.5rem;
-    margin-bottom: var(--spacing-sm);
-    color: var(--success-color);
+    border: none;
+    background: none;
+    color: var(--hint-color);
 }
 
-.success-text {
-    color: var(--tg-theme-hint-color);
-}
-
-/* ============================================
-   Placeholder
-   ============================================ */
-.placeholder-content {
-    text-align: center;
-    padding: var(--spacing-xl);
-    color: var(--tg-theme-hint-color);
-}
-
-.placeholder-icon {
-    font-size: 3rem;
-    display: block;
-    margin-bottom: var(--spacing-md);
+.rule-body {
+    margin-top: 20px;
+    line-height: 1.7;
 }
 
 /* ============================================
-   Loading Overlay
+   Loading & Success
    ============================================ */
 .loading-overlay {
     position: fixed;
@@ -385,11 +517,12 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 3000;
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
 }
 
 .loading-overlay.active {
@@ -397,39 +530,69 @@ body {
 }
 
 .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
+    width: 50px;
+    height: 50px;
+    border: 3px solid var(--secondary-bg);
+    border-top: 3px solid var(--accent-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.success-content {
+    text-align: center;
+    padding: 50px 20px;
+}
+
+.success-icon {
+    font-size: 5rem;
+    display: block;
+    margin-bottom: 24px;
+    animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+
+    70% {
+        transform: scale(0.9);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 /* ============================================
-   Dark Mode Support
+   Dark Mode Support (Auto)
    ============================================ */
 @media (prefers-color-scheme: dark) {
     :root {
-        --tg-theme-bg-color: #1c1c1e;
-        --tg-theme-text-color: #ffffff;
-        --tg-theme-hint-color: #8e8e93;
-        --tg-theme-secondary-bg-color: #2c2c2e;
+        --bg-color: #1c1c1e;
+        --text-color: #ffffff;
+        --secondary-bg: #2c2c2e;
+        --glass-bg: rgba(44, 44, 46, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.1);
     }
-    
-    .anonymous-notice {
-        background: linear-gradient(135deg, #1b3d1e, #1f4d22);
-        color: #81c784;
-    }
-}
 
-/* ============================================
-   Telegram Theme Colors
-   ============================================ */
-body.tg-theme {
-    background-color: var(--tg-theme-bg-color);
-    color: var(--tg-theme-text-color);
+    .option-btn:hover {
+        background: #3a3a3c;
+    }
+
+    .loading-overlay {
+        background: rgba(28, 28, 30, 0.8);
+    }
 }

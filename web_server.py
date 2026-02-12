@@ -125,6 +125,61 @@ def get_complaint_types_from_db():
     return complaint_types
 
 
+def save_rating_to_db(data):
+    """Baholashni saqlash"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Ma'lumotlarni lesson_ratings jadvaliga saqlash
+    # (Bu yerda jadval strukturasi botnikiga mos bo'lishi kerak)
+    cursor.execute('''
+        INSERT INTO lesson_ratings (
+            faculty, direction, course, education_type, education_lang,
+            ratings, comments, source
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        data.get('faculty', ''),
+        data.get('direction', ''),
+        data.get('course', ''),
+        data.get('education_type', ''),
+        data.get('education_language', ''),
+        json.dumps(data.get('ratings', {})),
+        data.get('comment', ''),
+        'webapp'
+    ))
+    conn.commit()
+    rating_id = cursor.lastrowid
+    conn.close()
+    return rating_id
+
+
+def get_rating_questions_from_db():
+    """Baholash savollarini olish"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT question_number, translation_key, answer_type FROM rating_questions WHERE is_active = 1 ORDER BY question_number')
+    questions = [{
+        'number': row[0],
+        'translation_key': row[1],
+        'type': row[2]
+    } for row in cursor.fetchall()]
+    conn.close()
+    return questions
+
+
+def get_survey_links_from_db():
+    """So'rovnoma havolalarini olish"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT code, url, translation_key FROM survey_links WHERE is_active = 1')
+    surveys = [{
+        'code': row[0],
+        'url': row[1],
+        'translation_key': row[2]
+    } for row in cursor.fetchall()]
+    conn.close()
+    return surveys
+
+
 def save_complaint_to_db(data):
     """Murojaatni saqlash"""
     conn = get_db_connection()
@@ -206,6 +261,39 @@ async def api_complaint_types(request):
     return web.json_response({'complaint_types': complaint_types})
 
 
+async def api_rating_questions(request):
+    """Baholash savollarini olish"""
+    questions = get_rating_questions_from_db()
+    return web.json_response({'questions': questions})
+
+
+async def api_submit_rating(request):
+    """Baholash yuborish"""
+    try:
+        data = await request.json()
+        rating_id = save_rating_to_db(data)
+        return web.json_response({'success': True, 'rating_id': rating_id})
+    except Exception as e:
+        logger.error(f"Error submitting rating: {e}")
+        return web.json_response({'success': False, 'error': str(e)}, status=500)
+
+
+async def api_surveys(request):
+    """So'rovnomalarni olish"""
+    surveys = get_survey_links_from_db()
+    return web.json_response({'surveys': surveys})
+
+
+async def api_languages(request):
+    """Faol tillarni olish"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT code, name FROM languages WHERE is_active = 1')
+    languages = [{'code': row[0], 'name': row[1]} for row in cursor.fetchall()]
+    conn.close()
+    return web.json_response({'languages': languages})
+
+
 async def api_submit_complaint(request):
     """Murojaat yuborish"""
     try:
@@ -245,6 +333,8 @@ async def api_config(request):
         'education_types': get_education_types_from_db(),
         'education_languages': get_education_languages_from_db(),
         'complaint_types': get_complaint_types_from_db(),
+        'rating_questions': get_rating_questions_from_db(),
+        'surveys': get_survey_links_from_db(),
         'courses': {
             'regular': get_courses_from_db('regular'),
             'magistr': get_courses_from_db('magistr')
@@ -279,6 +369,10 @@ def create_webapp_server():
     app.router.add_get('/api/education-languages', api_education_languages)
     app.router.add_get('/api/complaint-types', api_complaint_types)
     app.router.add_post('/api/complaint', api_submit_complaint)
+    app.router.add_get('/api/rating-questions', api_rating_questions)
+    app.router.add_post('/api/rating', api_submit_rating)
+    app.router.add_get('/api/surveys', api_surveys)
+    app.router.add_get('/api/languages', api_languages)
     app.router.add_get('/api/config', api_config)
     
     # Root route for index.html

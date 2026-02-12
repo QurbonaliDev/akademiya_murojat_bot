@@ -10,16 +10,16 @@ const state = {
     language: 'uz',
     translations: {},
     config: null,
-    formData: {
+    formData: {},
+    ratingData: {
+        step: 1,
         faculty: null,
         direction: null,
-        education_type: null,
-        education_language: null,
         course: null,
-        complaint_type: null,
-        subject_name: '',
-        teacher_name: '',
-        message: ''
+        edu_type: null,
+        edu_lang: null,
+        ratings: {},
+        comment: ''
     }
 };
 
@@ -65,12 +65,60 @@ async function fetchConfig() {
         state.translations = state.config.translations;
 
         applyTranslations();
+        updateCurrentLangUI();
+        renderLanguages();
         console.log('Config loaded:', state.config);
     } catch (error) {
         console.error('Error fetching config:', error);
         showError('Ma\'lumotlarni yuklashda xatolik');
     } finally {
         hideLoading();
+    }
+}
+
+async function fetchLanguages() {
+    try {
+        const response = await fetch(`${API_BASE}/api/languages`);
+        return await response.json();
+    } catch (error) {
+        return { languages: [{ code: 'uz', name: 'O\'zbekcha' }] };
+    }
+}
+
+async function changeLanguage(langCode) {
+    state.language = langCode;
+    toggleLangMenu(false);
+    await fetchConfig();
+    updateHeader(state.currentView);
+}
+
+function updateCurrentLangUI() {
+    const el = document.getElementById('currentLang');
+    if (el) el.textContent = state.language.toUpperCase();
+}
+
+async function renderLanguages() {
+    const container = document.getElementById('langMenu');
+    if (!container) return;
+
+    const data = await fetchLanguages();
+    container.innerHTML = '';
+
+    data.languages?.forEach(lang => {
+        const btn = document.createElement('button');
+        btn.className = 'lang-item';
+        btn.textContent = lang.name;
+        btn.onclick = () => changeLanguage(lang.code);
+        container.appendChild(btn);
+    });
+}
+
+function toggleLangMenu(force) {
+    const menu = document.getElementById('langMenu');
+    if (force !== undefined) {
+        menu.classList.toggle('active', force);
+    } else {
+        menu.classList.toggle('active');
     }
 }
 
@@ -90,52 +138,78 @@ async function submitComplaint(data) {
     try {
         const response = await fetch(`${API_BASE}/api/complaint`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-
         const result = await response.json();
-
         if (result.success) {
             showView('successView');
-            if (tg) {
-                tg.showAlert('Murojaatingiz muvaffaqiyatli yuborildi!');
-            }
         } else {
             showError(result.error || 'Xatolik yuz berdi');
         }
     } catch (error) {
-        console.error('Error submitting complaint:', error);
         showError('Yuborishda xatolik');
-    } finally {
-        hideLoading();
-    }
+    } finally { hideLoading(); }
+}
+
+async function submitRating() {
+    showLoading();
+    try {
+        const payload = {
+            faculty: state.ratingData.faculty,
+            direction: state.ratingData.direction,
+            course: state.ratingData.course,
+            education_type: state.ratingData.edu_type,
+            education_language: state.ratingData.edu_lang,
+            ratings: state.ratingData.ratings,
+            comment: document.getElementById('ratingComment').value
+        };
+        const response = await fetch(`${API_BASE}/api/rating`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.success) {
+            showView('successView');
+        } else {
+            showError(result.error || 'Xatolik yuz berdi');
+        }
+    } catch (error) {
+        showError('Yuborishda xatolik');
+    } finally { hideLoading(); }
 }
 
 // ============================================
 // VIEW NAVIGATION
 // ============================================
 function showView(viewId) {
-    // Hide all views
-    document.querySelectorAll('.view').forEach(view => {
-        view.classList.remove('active');
-    });
-
-    // Show selected view
+    document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
     const view = document.getElementById(viewId);
     if (view) {
         view.classList.add('active');
         state.currentView = viewId;
     }
-
-    // Update header
     updateHeader(viewId);
 
-    // Reset form when entering complaint view
-    if (viewId === 'complaintView') {
-        initComplaintForm();
+    // Initializers
+    if (viewId === 'complaintView') initComplaintForm();
+    if (viewId === 'ratingView') initRatingForm();
+    if (viewId === 'rulesView') renderRulesList();
+    if (viewId === 'surveyView') renderSurveyList();
+
+    // Telegram Back Button
+    if (tg) {
+        if (viewId === 'homeView') {
+            tg.BackButton.hide();
+        } else {
+            tg.BackButton.show();
+            tg.BackButton.onClick(() => {
+                if (state.currentView === 'complaintView') prevStep();
+                else if (state.currentView === 'ratingView') prevRatingStep();
+                else showView('homeView');
+            });
+        }
     }
 }
 
@@ -443,7 +517,13 @@ function createOptionButton(text, onClick) {
     btn.type = 'button';
     btn.className = 'option-btn';
     btn.textContent = text;
-    btn.onclick = onClick;
+    btn.onclick = (e) => {
+        // Remove selected class from siblings
+        const parent = btn.parentElement;
+        parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        onClick(e);
+    };
     return btn;
 }
 
@@ -511,15 +591,233 @@ function resetForm() {
 }
 
 // ============================================
-// RULES FUNCTIONS
+// RULES & SURVEYS
 // ============================================
-function showRuleDetail(ruleType) {
-    // For now, just show an alert with rule info
-    if (tg) {
-        tg.showAlert(`${ruleType} qoidalari haqida ma'lumot tez orada qo'shiladi!`);
-    } else {
-        alert(`${ruleType} qoidalari`);
+function renderRulesList() {
+    const container = document.getElementById('rulesList');
+    container.innerHTML = '';
+
+    // Rules from translations
+    const ruleTypes = ['grading', 'exam', 'general'];
+    ruleTypes.forEach(type => {
+        const card = document.createElement('div');
+        card.className = 'rule-card';
+        card.onclick = () => showRuleDetail(type);
+
+        const icons = { grading: '📊', exam: '📝', general: '📋' };
+        card.innerHTML = `
+            <span class="rule-icon">${icons[type]}</span>
+            <div class="rule-info">
+                <span class="rule-title">${t('btn_' + type)}</span>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function showRuleDetail(type) {
+    const modal = document.getElementById('ruleDetail');
+    const title = document.getElementById('ruleTitle');
+    const body = document.getElementById('ruleBody');
+
+    title.textContent = t('btn_' + type);
+    // In actual app, we'd have rules_grading translation
+    body.innerHTML = t('rules_' + type).replace(/\n/g, '<br>');
+
+    modal.style.display = 'flex';
+}
+
+function hideRuleDetail() {
+    document.getElementById('ruleDetail').style.display = 'none';
+}
+
+function renderSurveyList() {
+    const container = document.getElementById('surveyList');
+    container.innerHTML = '';
+
+    state.config?.surveys?.forEach(survey => {
+        const card = document.createElement('a');
+        card.className = 'survey-card';
+        card.href = survey.url;
+        card.target = '_blank';
+
+        card.innerHTML = `
+            <span class="survey-icon">📊</span>
+            <div class="survey-info">
+                <span class="survey-title">${t(survey.translation_key)}</span>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// ============================================
+// RATING FORM
+// ============================================
+function initRatingForm() {
+    state.ratingData = {
+        step: 1,
+        faculty: null,
+        direction: null,
+        course: null,
+        edu_type: null,
+        edu_lang: null,
+        ratings: {},
+        comment: ''
+    };
+    renderRatingFacultyButtons();
+    showRatingStep(1);
+}
+
+function showRatingStep(step) {
+    state.ratingData.step = step;
+    document.querySelectorAll('#ratingForm .form-step').forEach(s => s.classList.remove('active'));
+
+    const stepEl = document.getElementById(`ratingStep${step}`);
+    if (stepEl) stepEl.classList.add('active');
+
+    // Nav logic
+    document.getElementById('ratingBackBtn').style.display = step > 1 ? 'flex' : 'none';
+    document.getElementById('ratingSubmitBtn').style.display = step === 7 ? 'flex' : 'none';
+}
+
+function renderRatingFacultyButtons() {
+    const container = document.getElementById('ratingFacultyButtons');
+    container.innerHTML = '';
+    state.config?.faculties?.forEach(f => {
+        const btn = createOptionButton(t(f.translation_key), () => {
+            state.ratingData.faculty = f.code;
+            nextRatingStep();
+        });
+        container.appendChild(btn);
+    });
+}
+
+function nextRatingStep() {
+    const next = state.ratingData.step + 1;
+    const faculty = state.ratingData.faculty;
+
+    // Skip education type/lang for magistratura
+    if (faculty === 'magistratura') {
+        if (state.ratingData.step === 2) {
+            showRatingStep(5);
+            renderRatingCourseButtons();
+            return;
+        }
     }
+
+    if (next === 2) renderRatingDirectionButtons();
+    else if (next === 3) renderRatingEduTypeButtons();
+    else if (next === 4) renderRatingEduLangButtons();
+    else if (next === 5) renderRatingCourseButtons();
+    else if (next === 6) renderRatingQuestions();
+
+    showRatingStep(next);
+}
+
+async function renderRatingEduTypeButtons() {
+    const container = getOrCreateRatingStepContainer('ratingStep3', 'choose_edu_type', 'ratingEduTypeButtons');
+    container.innerHTML = '';
+    state.config?.education_types?.forEach(et => {
+        const btn = createOptionButton(t(et.translation_key), () => {
+            state.ratingData.edu_type = et.code;
+            nextRatingStep();
+        });
+        container.appendChild(btn);
+    });
+}
+
+async function renderRatingEduLangButtons() {
+    const container = getOrCreateRatingStepContainer('ratingStep4', 'choose_edu_lang', 'ratingEduLangButtons');
+    container.innerHTML = '';
+    state.config?.education_languages?.forEach(el => {
+        const btn = createOptionButton(t(el.translation_key), () => {
+            state.ratingData.edu_lang = el.code;
+            nextRatingStep();
+        });
+        container.appendChild(btn);
+    });
+}
+
+async function renderRatingCourseButtons() {
+    const container = getOrCreateRatingStepContainer('ratingStep5', 'choose_course', 'ratingCourseButtons');
+    container.innerHTML = '';
+    const courseType = state.ratingData.faculty === 'magistratura' ? 'magistr' : 'regular';
+    state.config?.courses?.[courseType]?.forEach(c => {
+        const btn = createOptionButton(t(c.translation_key), () => {
+            state.ratingData.course = c.code;
+            nextRatingStep();
+        });
+        container.appendChild(btn);
+    });
+}
+
+function getOrCreateRatingStepContainer(stepId, titleKey, buttonsId) {
+    let stepEl = document.getElementById(stepId);
+    if (!stepEl) {
+        stepEl = document.createElement('div');
+        stepEl.id = stepId;
+        stepEl.className = 'form-step';
+        stepEl.innerHTML = `
+            <label class="form-label" data-i18n="${titleKey}">${t(titleKey)}</label>
+            <div id="${buttonsId}" class="button-group"></div>
+        `;
+        document.getElementById('ratingForm').insertBefore(stepEl, document.getElementById('ratingQuestionsStep'));
+    }
+    return document.getElementById(buttonsId);
+}
+
+function renderRatingQuestions() {
+    const container = document.getElementById('questionContainer');
+    container.innerHTML = '';
+
+    state.config?.rating_questions?.forEach(q => {
+        const item = document.createElement('div');
+        item.className = 'question-item';
+        item.innerHTML = `
+            <span class="question-text">${t(q.translation_key)}</span>
+            <div class="rating-options" id="q_${q.number}">
+                ${[1, 2, 3, 4, 5].map(n => `
+                    <button class="rating-btn" onclick="setRating(${q.number}, ${n})">${n}</button>
+                `).join('')}
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function prevRatingStep() {
+    if (state.ratingData.step > 1) {
+        showRatingStep(state.ratingData.step - 1);
+    } else {
+        showView('homeView');
+    }
+}
+
+async function renderRatingDirectionButtons() {
+    const container = document.getElementById('ratingDirectionButtons');
+    if (!container) {
+        // Create container if it doesn't exist in index.html (I should add it)
+        const step2 = document.createElement('div');
+        step2.id = 'ratingStep2';
+        step2.className = 'form-step';
+        step2.innerHTML = `
+            <label class="form-label" data-i18n="choose_direction">Yo'nalishni tanlang</label>
+            <div id="ratingDirectionButtons" class="button-group"></div>
+        `;
+        document.getElementById('ratingForm').insertBefore(step2, document.getElementById('ratingQuestionsStep'));
+    }
+    const target = document.getElementById('ratingDirectionButtons');
+    target.innerHTML = '<p>Yuklanmoqda...</p>';
+    const data = await fetchDirections(state.ratingData.faculty);
+    target.innerHTML = '';
+    data.directions?.forEach(dir => {
+        const btn = createOptionButton(t(dir.translation_key), () => {
+            state.ratingData.direction = dir.code;
+            nextRatingStep();
+        });
+        target.appendChild(btn);
+    });
 }
 
 // ============================================
@@ -579,3 +877,9 @@ window.nextStep = nextStep;
 window.prevStep = prevStep;
 window.resetForm = resetForm;
 window.showRuleDetail = showRuleDetail;
+window.hideRuleDetail = hideRuleDetail;
+window.toggleLangMenu = toggleLangMenu;
+window.nextRatingStep = nextRatingStep;
+window.prevRatingStep = prevRatingStep;
+window.submitRating = submitRating;
+window.setRating = setRating;

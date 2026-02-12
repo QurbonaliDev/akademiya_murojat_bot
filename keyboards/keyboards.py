@@ -10,207 +10,274 @@ from utils.utils import (
 
 
 def get_language_keyboard():
-    """Til tanlash klaviaturasi (BAZADAN)"""
-    languages = get_active_languages()
-    keyboard = [[KeyboardButton(lang_name)] for lang_name in languages.values()]
+    """Til tanlash klaviaturasi (BAZADAN, 2 tugma bir qator)"""
+    languages = list(get_active_languages().values())
+    keyboard = []
+    for i in range(0, len(languages), 2):
+        row = [KeyboardButton(languages[i])]
+        if i + 1 < len(languages):
+            row.append(KeyboardButton(languages[i + 1]))
+        keyboard.append(row)
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_main_menu_keyboard(context, webapp_url=None):
-    """Asosiy menyu klaviaturasi (Dinamik)"""
-    keyboard = [
-        [KeyboardButton(get_text('btn_complaint', context))],
-        [KeyboardButton(get_text('btn_rules', context))],
-        [KeyboardButton(get_text('btn_survey', context))],
-        [KeyboardButton(get_text('btn_lesson_rating', context))],
-        [KeyboardButton(get_text('btn_admin', context))],
-        [KeyboardButton(get_text('btn_lang', context))]
+    """Asosiy menyu klaviaturasi (Dinamik, 2 tugma bir qator)"""
+    buttons = [
+        get_text('btn_complaint', context),
+        get_text('btn_rules', context),
+        get_text('btn_survey', context),
+        get_text('btn_lesson_rating', context),
+        get_text('btn_admin', context),
+        get_text('btn_lang', context)
     ]
-    
-    # Mini App tugmasini qo'shish (agar URL mavjud bo'lsa)
+
     if webapp_url:
-        keyboard.insert(0, [KeyboardButton(
-            text="🌐 Mini App",
-            web_app=WebAppInfo(url=webapp_url)
-        )])
-    
+        buttons.insert(0, "🌐 Mini App")
+
+    keyboard = []
+    for i in range(0, len(buttons), 2):
+        row = [KeyboardButton(buttons[i])]
+        if i + 1 < len(buttons):
+            row.append(KeyboardButton(buttons[i + 1]))
+        keyboard.append(row)
+
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_directions_keyboard(context):
-    """Yo'nalishlar klaviaturasi (BAZADAN)"""
-    all_directions = get_all_directions()
-    keyboard = [[KeyboardButton(get_text(val, context))] for val in all_directions.values()]
+    """Yo'nalishlar klaviaturasi (BAZADAN, 2 tugma bir qator)"""
+    all_directions = list(get_all_directions().values())
+    keyboard = []
+    for i in range(0, len(all_directions), 2):
+        row = [KeyboardButton(get_text(all_directions[i], context))]
+        if i + 1 < len(all_directions):
+            row.append(KeyboardButton(get_text(all_directions[i + 1], context)))
+        keyboard.append(row)
     keyboard.append([KeyboardButton(get_text('btn_back', context))])
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_dynamic_keyboard(items: dict, context, prefix="dir_"):
-    """Dinamik keyboard yaratish"""
-    buttons = []
-    for code, val in items.items():
-        label = get_text(val, context)
-        buttons.append([KeyboardButton(label)])
-        
-    buttons.append([KeyboardButton(get_text('btn_back', context))])
-    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
+    """Dinamik keyboard yaratish (2 tugma bir qator)"""
+    values = list(items.values())
+    keyboard = []
+    for i in range(0, len(values), 2):
+        row = [KeyboardButton(get_text(values[i], context))]
+        if i + 1 < len(values):
+            row.append(KeyboardButton(get_text(values[i + 1], context)))
+        keyboard.append(row)
+    keyboard.append([KeyboardButton(get_text('btn_back', context))])
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_faculties_keyboard(context):
-    """Fakultetlar klaviaturasi (BAZADAN)"""
-    faculties = get_faculties()
-    keyboard = [[KeyboardButton(get_text(val, context))] for val in faculties.values()]
+    """Fakultetlar klaviaturasi (2 tugma bir qator)"""
+    faculties = list(get_faculties().values())
+    keyboard = []
+    for i in range(0, len(faculties), 2):
+        row = [KeyboardButton(get_text(faculties[i], context))]
+        if i + 1 < len(faculties):
+            row.append(KeyboardButton(get_text(faculties[i + 1], context)))
+        keyboard.append(row)
     keyboard.append([KeyboardButton(get_text('btn_back', context))])
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_education_type_keyboard(context):
-    """Ta'lim turi klaviaturasi (BAZADAN)"""
-    edu_types = get_education_types()
-    keyboard = [[KeyboardButton(get_text(val, context))] for val in edu_types.values()]
+    """Ta'lim turi klaviaturasi (2 tugma bir qator)"""
+    edu_types = list(get_education_types().values())
+    keyboard = []
+    for i in range(0, len(edu_types), 2):
+        row = [KeyboardButton(get_text(edu_types[i], context))]
+        if i + 1 < len(edu_types):
+            row.append(KeyboardButton(get_text(edu_types[i + 1], context)))
+        keyboard.append(row)
     keyboard.append([KeyboardButton(get_text('btn_back', context))])
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_education_lang_keyboard(context):
-    """Ta'lim tili klaviaturasi (BAZADAN)"""
-    edu_langs = get_education_languages()
-    keyboard = [[KeyboardButton(get_text(val, context))] for val in edu_langs.values()]
+    """Ta'lim tili klaviaturasi (2 tugma bir qator)"""
+    edu_langs = list(get_education_languages().values())
+    keyboard = []
+    for i in range(0, len(edu_langs), 2):
+        row = [KeyboardButton(get_text(edu_langs[i], context))]
+        if i + 1 < len(edu_langs):
+            row.append(KeyboardButton(get_text(edu_langs[i + 1], context)))
+        keyboard.append(row)
     keyboard.append([KeyboardButton(get_text('btn_back', context))])
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_courses_keyboard(context):
-    """Kurslar klaviaturasi - fakultetga qarab (BAZADAN)"""
+    """Kurslar klaviaturasi - fakultetga qarab (2 tugma bir qator)"""
     faculty = context.user_data.get('faculty', '')
-    
     if faculty == 'magistratura':
-        courses = get_magistr_courses()
+        courses = list(get_magistr_courses().values())
     else:
-        courses = get_regular_courses()
-    
-    keyboard = [[KeyboardButton(get_text(val, context))] for val in courses.values()]
+        courses = list(get_regular_courses().values())
+    keyboard = []
+    for i in range(0, len(courses), 2):
+        row = [KeyboardButton(get_text(courses[i], context))]
+        if i + 1 < len(courses):
+            row.append(KeyboardButton(get_text(courses[i + 1], context)))
+        keyboard.append(row)
     keyboard.append([KeyboardButton(get_text('btn_back', context))])
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_complaint_types_keyboard(context):
-    """Murojaat turlari klaviaturasi (BAZADAN)"""
-    complaint_types = get_complaint_types()
-    keyboard = [[KeyboardButton(get_text(val, context))] for val in complaint_types.values()]
+    """Murojaat turlari klaviaturasi (2 tugma bir qator)"""
+    complaint_types = list(get_complaint_types().values())
+    keyboard = []
+    for i in range(0, len(complaint_types), 2):
+        row = [KeyboardButton(get_text(complaint_types[i], context))]
+        if i + 1 < len(complaint_types):
+            row.append(KeyboardButton(get_text(complaint_types[i + 1], context)))
+        keyboard.append(row)
     keyboard.append([KeyboardButton(get_text('btn_back', context))])
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
+# Qolgan statik klaviaturalar ham 2tadan qilamiz
+
 def get_rules_keyboard(context):
-    """Tartib qoidalar klaviaturasi"""
-    keyboard = [
-        [KeyboardButton(get_text('btn_grading', context))],
-        [KeyboardButton(get_text('btn_exam', context))],
-        [KeyboardButton(get_text('btn_general', context))],
-        [KeyboardButton(get_text('btn_back', context))]
+    buttons = [
+        get_text('btn_grading', context),
+        get_text('btn_exam', context),
+        get_text('btn_general', context),
+        get_text('btn_back', context)
     ]
+    keyboard = []
+    for i in range(0, len(buttons), 2):
+        row = [KeyboardButton(buttons[i])]
+        if i + 1 < len(buttons):
+            row.append(KeyboardButton(buttons[i + 1]))
+        keyboard.append(row)
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_rules_detail_keyboard(context):
-    """Qoidalar detali klaviaturasi"""
-    keyboard = [
-        [KeyboardButton(get_text('btn_download_pdf', context))],
-        [KeyboardButton(get_text('btn_back', context))]
+    buttons = [
+        get_text('btn_download_pdf', context),
+        get_text('btn_back', context)
     ]
+    keyboard = [[KeyboardButton(b)] for b in buttons]  # bu ham 2taga bo‘lishi mumkin
+    if len(buttons) > 1:
+        keyboard = [[KeyboardButton(buttons[0]), KeyboardButton(buttons[1])]]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_survey_keyboard(context):
-    """So'rovnoma asosiy klaviaturasi"""
-    keyboard = [
-        [KeyboardButton(get_text('btn_survey_teachers', context))],
-        [KeyboardButton(get_text('btn_survey_edu', context))],
-        [KeyboardButton(get_text('btn_survey_emp', context))],
-        [KeyboardButton(get_text('btn_back', context))]
+    buttons = [
+        get_text('btn_survey_teachers', context),
+        get_text('btn_survey_edu', context),
+        get_text('btn_survey_emp', context),
+        get_text('btn_back', context)
     ]
+    keyboard = []
+    for i in range(0, len(buttons), 2):
+        row = [KeyboardButton(buttons[i])]
+        if i + 1 < len(buttons):
+            row.append(KeyboardButton(buttons[i + 1]))
+        keyboard.append(row)
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_survey_links_keyboard(context):
-    """So'rovnoma havolalari klaviaturasi"""
-    keyboard = [
-        [KeyboardButton(get_text('btn_survey_link', context))],
-        [KeyboardButton(get_text('btn_back', context))]
+    buttons = [
+        get_text('btn_survey_link', context),
+        get_text('btn_back', context)
     ]
+    keyboard = [[KeyboardButton(b) for b in buttons]]  # 2tadan
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_admin_keyboard(context):
-    """Admin panel klaviaturasi"""
-    keyboard = [
-        [KeyboardButton(get_text('btn_stats', context))],
-        [KeyboardButton(get_text('btn_view_complaints', context))],
-        [KeyboardButton(get_text('btn_export_menu', context))],
-        [KeyboardButton(get_text('btn_dashboard', context))],
-        [KeyboardButton(get_text('btn_settings', context))],  # YANGI - Sozlamalar
-        [KeyboardButton(get_text('btn_back_main', context))]
+    buttons = [
+        get_text('btn_stats', context),
+        get_text('btn_view_complaints', context),
+        get_text('btn_export_menu', context),
+        get_text('btn_dashboard', context),
+        get_text('btn_settings', context),
+        get_text('btn_back_main', context)
     ]
+    keyboard = []
+    for i in range(0, len(buttons), 2):
+        row = [KeyboardButton(buttons[i])]
+        if i + 1 < len(buttons):
+            row.append(KeyboardButton(buttons[i + 1]))
+        keyboard.append(row)
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_export_menu_keyboard(context):
-    """Excel export qilinadigan narsalar klaviaturasi"""
-    keyboard = [
-        [KeyboardButton(get_text('btn_export_excel', context))],
-        [KeyboardButton(get_text('btn_export_lesson', context))],
-        [KeyboardButton(get_text('btn_back', context))]
+    buttons = [
+        get_text('btn_export_excel', context),
+        get_text('btn_export_lesson', context),
+        get_text('btn_back', context)
     ]
+    keyboard = []
+    for i in range(0, len(buttons), 2):
+        row = [KeyboardButton(buttons[i])]
+        if i + 1 < len(buttons):
+            row.append(KeyboardButton(buttons[i + 1]))
+        keyboard.append(row)
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_yes_no_keyboard(context):
-    """Ha/Yo'q klaviaturasi (Lokalizatsiya qilingan)"""
-    keyboard = [[
+    return ReplyKeyboardMarkup([[
         KeyboardButton(get_text('btn_yes', context)),
         KeyboardButton(get_text('btn_no', context))
-    ]]
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    ]], resize_keyboard=True)
 
 
 def get_back_keyboard(context):
-    """Faqat orqaga tugmasi"""
     return ReplyKeyboardMarkup([[KeyboardButton(get_text('btn_back', context))]], resize_keyboard=True)
 
 
-# ============================================
 # ADMIN CRUD KEYBOARDS
-# ============================================
 
 def get_settings_keyboard(context):
-    """Sozlamalar menyusi klaviaturasi"""
-    keyboard = [
-        [KeyboardButton(get_text('btn_manage_admins', context))],
-        [KeyboardButton(get_text('btn_manage_faculties', context))],
-        [KeyboardButton(get_text('btn_manage_directions', context))],
-        [KeyboardButton(get_text('btn_manage_questions', context))],
-        [KeyboardButton(get_text('btn_manage_languages', context))],
-        [KeyboardButton(get_text('btn_back', context))]
+    buttons = [
+        get_text('btn_manage_admins', context),
+        get_text('btn_manage_faculties', context),
+        get_text('btn_manage_directions', context),
+        get_text('btn_manage_questions', context),
+        get_text('btn_manage_languages', context),
+        get_text('btn_back', context)
     ]
+    keyboard = []
+    for i in range(0, len(buttons), 2):
+        row = [KeyboardButton(buttons[i])]
+        if i + 1 < len(buttons):
+            row.append(KeyboardButton(buttons[i + 1]))
+        keyboard.append(row)
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_crud_keyboard(context):
-    """CRUD operatsiyalari klaviaturasi"""
-    keyboard = [
-        [KeyboardButton(get_text('btn_add', context))],
-        [KeyboardButton(get_text('btn_list', context))],
-        [KeyboardButton(get_text('btn_delete', context))],
-        [KeyboardButton(get_text('btn_back', context))]
+    buttons = [
+        get_text('btn_add', context),
+        get_text('btn_list', context),
+        get_text('btn_delete', context),
+        get_text('btn_back', context)
     ]
+    keyboard = []
+    for i in range(0, len(buttons), 2):
+        row = [KeyboardButton(buttons[i])]
+        if i + 1 < len(buttons):
+            row.append(KeyboardButton(buttons[i + 1]))
+        keyboard.append(row)
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
 def get_confirm_keyboard(context):
-    """Tasdiqlash klaviaturasi"""
-    keyboard = [
-        [KeyboardButton(get_text('btn_confirm', context))],
-        [KeyboardButton(get_text('btn_cancel', context))]
+    buttons = [
+        get_text('btn_confirm', context),
+        get_text('btn_cancel', context)
     ]
+    keyboard = [[KeyboardButton(buttons[0]), KeyboardButton(buttons[1])]]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
