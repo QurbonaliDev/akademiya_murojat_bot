@@ -1,677 +1,480 @@
-// app.js - Mini App JavaScript
+/**
+ * app.js - Full Premium Logic for Telegram Mini App
+ * - Tailwind Design System
+ * - 9-step Rating Flow
+ * - Admin Dashboard & CRUD
+ * - Multi-language Support
+ */
 
-// ============================================
-// GLOBAL STATE
-// ============================================
-const state = {
-    currentStep: 1,
-    totalSteps: 8,
-    currentView: 'homeView',
-    language: 'uz',
-    translations: {},
-    config: null,
-    formData: {},
-    ratingData: {
-        step: 1,
-        faculty: null,
-        direction: null,
-        course: null,
-        edu_type: null,
-        edu_lang: null,
-        ratings: {},
-        comment: ''
-    }
-};
-
-// API Base URL (relative to current host)
 const API_BASE = window.location.origin;
-
-// ============================================
-// TELEGRAM WEBAPP INTEGRATION
-// ============================================
 const tg = window.Telegram?.WebApp;
 
-function initTelegram() {
+// Initial State
+const state = {
+    lang: 'uz',
+    translations: {},
+    config: {}, // Faculties, directions, types, etc.
+    currentView: 'homeView',
+    complaintData: {},
+    ratingData: {
+        step: 1,
+        maxSteps: 9,
+        answers: {}
+    },
+    adminStats: {}
+};
+
+/**
+ * INITIALIZATION
+ */
+async function initApp() {
     if (tg) {
-        // Expand to full height
-        tg.expand();
-
-        // Apply theme colors
-        document.body.classList.add('tg-theme');
-        document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
-        document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
-        document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#999999');
-        document.documentElement.style.setProperty('--tg-theme-link-color', tg.themeParams.link_color || '#2481cc');
-        document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2481cc');
-        document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
-        document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#f0f0f0');
-
-        // Ready
         tg.ready();
-        console.log('Telegram WebApp initialized');
+        tg.expand();
+        // Set theme from Telegram
+        if (tg.colorScheme === 'dark') document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
     }
-}
 
-// ============================================
-// API FUNCTIONS
-// ============================================
-async function fetchConfig() {
     showLoading();
     try {
-        const response = await fetch(`${API_BASE}/api/config?lang=${state.language}`);
-        if (!response.ok) throw new Error('Failed to fetch config');
-
-        state.config = await response.json();
-        state.translations = state.config.translations;
-
+        await fetchConfig();
         applyTranslations();
-        updateCurrentLangUI();
-        renderLanguages();
-
-        // Show Admin button if user is admin
-        if (state.config.is_admin) {
-            document.getElementById('adminTabBtn').style.display = 'flex';
-        }
-
-        console.log('Config loaded:', state.config);
-    } catch (error) {
-        console.error('Error fetching config:', error);
-        showError('Ma\'lumotlarni yuklashda xatolik');
+        initNavigation();
+        showView('homeView');
+    } catch (err) {
+        console.error('Initialization failed', err);
     } finally {
         hideLoading();
     }
 }
 
-async function fetchLanguages() {
-    try {
-        const response = await fetch(`${API_BASE}/api/languages`);
-        return await response.json();
-    } catch (error) {
-        return { languages: [{ code: 'uz', name: 'O\'zbekcha' }] };
+/**
+ * CONFIG & DATA FETCHING
+ */
+async function fetchConfig() {
+    const user_id = tg?.initDataUnsafe?.user?.id || '';
+    const response = await fetch(`${API_BASE}/api/config?lang=${state.lang}&user_id=${user_id}`);
+    state.config = await response.json();
+    state.translations = state.config.translations || {};
+
+    // Check Admin Status
+    if (state.config.is_admin) {
+        document.getElementById('adminTabBtn')?.classList.remove('hidden');
     }
 }
 
-async function changeLanguage(langCode) {
-    state.language = langCode;
-    toggleLangMenu(false);
+/**
+ * TRANSLATIONS & L10N
+ */
+function t(key) {
+    return state.translations[key] || key;
+}
+
+function applyTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.textContent = t(key);
+    });
+
+    // Update labels and placeholders
+    document.getElementById('currentLang').textContent = state.lang.toUpperCase();
+    document.getElementById('headerTitle').textContent = t('header_title') || 'Akademiya';
+}
+
+async function changeLanguage(newLang) {
+    state.lang = newLang;
+    showLoading();
     await fetchConfig();
-    updateHeader(state.currentView);
+    applyTranslations();
+    toggleLangMenu(); // Close menu
+    hideLoading();
 }
 
-function updateCurrentLangUI() {
-    const el = document.getElementById('currentLang');
-    if (el) el.textContent = state.language.toUpperCase();
+function renderLanguages() {
+    const menu = document.getElementById('langMenu');
+    const langs = { uz: 'O\'zbekcha', ru: 'Русский', en: 'English' };
+    menu.innerHTML = Object.entries(langs).map(([code, name]) => `
+        <button onclick="changeLanguage('${code}')" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            ${name}
+        </button>
+    `).join('');
 }
 
-async function renderLanguages() {
-    const container = document.getElementById('langMenu');
-    if (!container) return;
+function toggleLangMenu() {
+    const menu = document.getElementById('langMenu');
+    menu.classList.toggle('hidden');
+    if (!menu.classList.contains('hidden')) renderLanguages();
+}
 
-    const data = await fetchLanguages();
+/**
+ * VIEW MANAGEMENT
+ */
+function showView(viewId) {
+    // Hide all
+    document.querySelectorAll('.view').forEach(v => {
+        v.classList.remove('active');
+        v.classList.add('hidden');
+    });
+
+    // Show target
+    const target = document.getElementById(viewId);
+    if (target) {
+        target.classList.remove('hidden');
+        setTimeout(() => target.classList.add('active'), 50);
+    }
+
+    state.currentView = viewId;
+
+    // Update Navigation Active State
+    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+    const navMap = { homeView: 'navHome', complaintView: 'navComplaint', ratingView: 'navRating', rulesView: 'navRules' };
+    if (navMap[viewId]) document.getElementById(navMap[viewId])?.classList.add('active');
+
+    // View specific initializers
+    if (viewId === 'complaintView') initComplaintFlow();
+    if (viewId === 'ratingView') initRatingFlow();
+    if (viewId === 'rulesView') renderRules();
+    if (viewId === 'surveyView') renderSurveys();
+    if (viewId === 'adminDashboardView') loadAdminDashboard();
+
+    // Scroll to top
+    window.scrollTo(0, 0);
+
+    // Lucide
+    if (window.lucide) window.lucide.createIcons();
+}
+
+/**
+ * COMPLAINT FLOW
+ */
+function initComplaintFlow() {
+    state.complaintData = { step: 1, answers: {} };
+    renderComplaintStep(1);
+}
+
+function renderComplaintStep(step) {
+    state.complaintData.step = step;
+    const container = document.getElementById('complaintStepContainer');
     container.innerHTML = '';
 
-    data.languages?.forEach(lang => {
-        const btn = document.createElement('button');
-        btn.className = 'lang-item';
-        btn.textContent = lang.name;
-        btn.onclick = () => changeLanguage(lang.code);
-        container.appendChild(btn);
-    });
-}
-
-function toggleLangMenu(force) {
-    const menu = document.getElementById('langMenu');
-    if (force !== undefined) {
-        menu.classList.toggle('active', force);
-    } else {
-        menu.classList.toggle('active');
+    switch (step) {
+        case 1: // Faculty
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_faculty')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
+            state.config.faculties?.forEach(f => appendComplaintOption(t(f.translation_key), 'university', () => {
+                state.complaintData.answers.faculty = f.code;
+                renderComplaintStep(2);
+            }));
+            break;
+        case 2: // Direction
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_direction')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
+            const directions = state.config.directions?.filter(d => d.faculty_code === state.complaintData.answers.faculty) || [];
+            directions.forEach(d => appendComplaintOption(t(d.translation_key), 'graduation-cap', () => {
+                state.complaintData.answers.direction = d.code;
+                if (state.complaintData.answers.faculty === 'magistratura') renderComplaintStep(5);
+                else renderComplaintStep(3);
+            }));
+            break;
+        case 3: // Edu Type
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_edu_type')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
+            state.config.education_types?.forEach(et => appendComplaintOption(t(et.translation_key), 'book-open', () => {
+                state.complaintData.answers.edu_type = et.code;
+                renderComplaintStep(4);
+            }));
+            break;
+        case 4: // Edu Lang
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_edu_lang')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
+            state.config.education_languages?.forEach(el => appendComplaintOption(t(el.translation_key), 'languages', () => {
+                state.complaintData.answers.edu_lang = el.code;
+                renderComplaintStep(5);
+            }));
+            break;
+        case 5: // Course
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_course')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
+            const type = state.complaintData.answers.faculty === 'magistratura' ? 'magistr' : 'regular';
+            state.config.courses?.[type]?.forEach(c => appendComplaintOption(t(c.translation_key), 'hash', () => {
+                state.complaintData.answers.course = c.code;
+                renderComplaintStep(6);
+            }));
+            break;
+        case 6: // Complaint Type
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_complaint_type')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
+            state.config.complaint_types?.forEach(ct => appendComplaintOption(t(ct.translation_key), 'info', () => {
+                state.complaintData.answers.type = ct.code;
+                state.complaintData.currentTypeInfo = ct;
+                if (ct.requires_subject) renderComplaintStep(7);
+                else if (ct.requires_teacher) renderComplaintStep(8);
+                else renderComplaintStep(9);
+            }));
+            break;
+        case 7: // Subject
+            container.innerHTML = `
+                <h3 class="text-lg font-bold mb-4">${t('enter_subject')}</h3>
+                <input type="text" id="compSubject" class="input-field mb-6" placeholder="${t('subject_placeholder')}">
+                <button onclick="saveComplaintInput('subject', 'compSubject')" class="btn-primary w-full">${t('btn_next')}</button>
+            `;
+            break;
+        case 8: // Teacher
+            container.innerHTML = `
+                <h3 class="text-lg font-bold mb-4">${t('enter_teacher')}</h3>
+                <input type="text" id="compTeacher" class="input-field mb-6" placeholder="${t('teacher_placeholder')}">
+                <button onclick="saveComplaintInput('teacher', 'compTeacher')" class="btn-primary w-full">${t('btn_next')}</button>
+            `;
+            break;
+        case 9: // Message
+            container.innerHTML = `
+                <h3 class="text-lg font-bold mb-4">${t('enter_message')}</h3>
+                <textarea id="compMessage" class="input-field h-40 mb-6" placeholder="${t('message_placeholder')}"></textarea>
+                <button onclick="submitComplaint()" class="btn-primary w-full">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                    ${t('btn_send')}
+                </button>
+            `;
+            break;
     }
+    if (window.lucide) window.lucide.createIcons();
 }
 
-async function fetchDirections(facultyCode) {
-    try {
-        const response = await fetch(`${API_BASE}/api/directions/${facultyCode}`);
-        if (!response.ok) throw new Error('Failed to fetch directions');
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching directions:', error);
-        return { directions: [] };
-    }
+function appendComplaintOption(label, icon, onClick) {
+    const el = createOptionCard(label, icon, onClick);
+    document.getElementById('complaintStepContent').appendChild(el);
 }
 
-async function submitComplaint(data) {
+function saveComplaintInput(key, inputId) {
+    const val = document.getElementById(inputId).value;
+    if (!val) return tg?.showAlert(t('error_fill_field'));
+    state.complaintData.answers[key] = val;
+
+    const info = state.complaintData.currentTypeInfo;
+    if (key === 'subject' && info.requires_teacher) renderComplaintStep(8);
+    else renderComplaintStep(9);
+}
+
+async function submitComplaint() {
+    const message = document.getElementById('compMessage').value;
+    state.complaintData.answers.message = message;
+
+    // Map internal keys to backend keys
+    const payload = {
+        user_id: tg?.initDataUnsafe?.user?.id || 'web_user',
+        faculty: state.complaintData.answers.faculty,
+        direction: state.complaintData.answers.direction,
+        course: state.complaintData.answers.course,
+        education_type: state.complaintData.answers.edu_type,
+        education_language: state.complaintData.answers.edu_lang,
+        complaint_type: state.complaintData.answers.type,
+        subject_name: state.complaintData.answers.subject,
+        teacher_name: state.complaintData.answers.teacher,
+        message: state.complaintData.answers.message
+    };
+
     showLoading();
     try {
         const response = await fetch(`${API_BASE}/api/complaint`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            body: JSON.stringify(payload)
         });
-        const result = await response.json();
-        if (result.success) {
-            showView('successView');
+
+        if (response.ok) showView('successView');
+        else throw new Error('Submission failed');
+    } catch (err) {
+        tg?.showAlert(t('error_unknown'));
+    } finally {
+        hideLoading();
+    }
+}
+
+window.saveComplaintInput = saveComplaintInput;
+window.submitComplaint = submitComplaint;
+
+/**
+ * RATING FLOW (9 STEPS)
+ */
+function initRatingFlow() {
+    state.ratingData = { step: 1, maxSteps: 9, answers: {} };
+    renderRatingStep(1);
+}
+
+function updateRatingProgress() {
+    const progress = (state.ratingData.step / state.ratingData.maxSteps) * 100;
+    document.getElementById('ratingProgressBar').style.width = `${progress}%`;
+}
+
+function renderRatingStep(step) {
+    state.ratingData.step = step;
+    updateRatingProgress();
+    const container = document.getElementById('ratingStepContainer');
+    container.innerHTML = '';
+
+    switch (step) {
+        case 1: // Faculty
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_faculty')}</h3><div class="space-y-3" id="stepContent"></div>`;
+            state.config.faculties?.forEach(item => {
+                appendOption(t(item.translation_key), () => {
+                    state.ratingData.answers.faculty = item.code;
+                    renderRatingStep(2);
+                }, 'university');
+            });
+            break;
+        case 2: // Direction
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_direction')}</h3><div class="space-y-3" id="stepContent"></div>`;
+            const directions = state.config.directions?.filter(d => d.faculty_code === state.ratingData.answers.faculty) || [];
+            directions.forEach(item => {
+                appendOption(t(item.translation_key), () => {
+                    state.ratingData.answers.direction = item.code;
+                    // Skip edu_type for magistratura
+                    if (state.ratingData.answers.faculty === 'magistratura') renderRatingStep(5);
+                    else renderRatingStep(3);
+                }, 'graduation-cap');
+            });
+            break;
+        case 3: // Edu Type
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_edu_type')}</h3><div class="space-y-3" id="stepContent"></div>`;
+            state.config.education_types?.forEach(item => {
+                appendOption(t(item.translation_key), () => {
+                    state.ratingData.answers.edu_type = item.code;
+                    renderRatingStep(4);
+                }, 'book-open');
+            });
+            break;
+        case 4: // Edu Lang
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_edu_lang')}</h3><div class="space-y-3" id="stepContent"></div>`;
+            state.config.education_languages?.forEach(item => {
+                appendOption(t(item.translation_key), () => {
+                    state.ratingData.answers.edu_lang = item.code;
+                    renderRatingStep(5);
+                }, 'languages');
+            });
+            break;
+        case 5: // Course
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_course')}</h3><div class="space-y-3" id="stepContent"></div>`;
+            const courseType = state.ratingData.answers.faculty === 'magistratura' ? 'magistr' : 'regular';
+            state.config.courses?.[courseType]?.forEach(item => {
+                appendOption(t(item.translation_key), () => {
+                    state.ratingData.answers.course = item.code;
+                    renderRatingStep(6);
+                }, 'hash');
+            });
+            break;
+        case 6: // Subject Name
+            container.innerHTML = `
+                <h3 class="text-lg font-bold mb-4">${t('enter_subject')}</h3>
+                <input type="text" id="subjectInput" class="input-field mb-6" placeholder="${t('subject_placeholder') || 'Fan nomi...'}">
+                <button onclick="saveRatingInput('subject_name', 'subjectInput', 7)" class="btn-primary w-full">${t('btn_next')}</button>
+            `;
+            break;
+        case 7: // Teacher Name
+            container.innerHTML = `
+                <h3 class="text-lg font-bold mb-4">${t('enter_teacher')}</h3>
+                <input type="text" id="teacherInput" class="input-field mb-6" placeholder="${t('teacher_placeholder') || 'O\'qituvchi ismi...'}">
+                <button onclick="saveRatingInput('teacher_name', 'teacherInput', 8)" class="btn-primary w-full">${t('btn_next')}</button>
+            `;
+            break;
+        case 8: // Rating Questions
+            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('btn_lesson_rating')}</h3><div class="space-y-6" id="questionsList"></div>`;
+            renderRatingQuestions();
+            break;
+        case 9: // Final Comment
+            container.innerHTML = `
+                <h3 class="text-lg font-bold mb-4">${t('enter_comment')}</h3>
+                <textarea id="ratingComment" class="input-field h-40 mb-6" placeholder="${t('comment_placeholder') || 'Batafsil fikringiz...'}"></textarea>
+                <button onclick="submitRating()" class="btn-primary w-full bg-green-500 hover:bg-green-600">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                    ${t('btn_send')}
+                </button>
+            `;
+            break;
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function saveRatingInput(key, inputId, nextStep) {
+    const val = document.getElementById(inputId).value;
+    if (!val) return tg?.showAlert(t('error_fill_field'));
+    state.ratingData.answers[key] = val;
+    renderRatingStep(nextStep);
+}
+
+function renderRatingQuestions() {
+    const container = document.getElementById('questionsList');
+    state.config.rating_questions?.forEach(q => {
+        const qEl = document.createElement('div');
+        qEl.className = 'space-y-3';
+        qEl.innerHTML = `<p class="font-semibold text-sm">${t(q.translation_key)}</p>`;
+
+        const opts = document.createElement('div');
+        opts.className = 'grid grid-cols-5 gap-2';
+
+        if (q.answer_type === 'scale') {
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'h-12 rounded-xl bg-slate-100 dark:bg-slate-800 font-bold active:bg-primary active:text-white transition-all';
+                btn.textContent = i;
+                btn.onclick = () => {
+                    state.ratingData.answers[`q${q.question_number}`] = i;
+                    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.replace('bg-primary', 'bg-slate-100'));
+                    btn.classList.add('bg-primary', 'text-white');
+                    checkRatingCompletion();
+                };
+                opts.appendChild(btn);
+            }
         } else {
-            showError(result.error || 'Xatolik yuz berdi');
+            // Yes/No logic...
         }
-    } catch (error) {
-        showError('Yuborishda xatolik');
-    } finally { hideLoading(); }
+        qEl.appendChild(opts);
+        container.appendChild(qEl);
+    });
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn-primary w-full mt-8';
+    nextBtn.textContent = t('btn_next');
+    nextBtn.onclick = () => renderRatingStep(9);
+    container.appendChild(nextBtn);
+}
+
+function checkRatingCompletion() {
+    // Check if all questions answered if needed
 }
 
 async function submitRating() {
+    const comment = document.getElementById('ratingComment').value;
+    state.ratingData.answers.comment = comment;
+
     showLoading();
     try {
-        const payload = {
-            faculty: state.ratingData.faculty,
-            direction: state.ratingData.direction,
-            course: state.ratingData.course,
-            education_type: state.ratingData.edu_type,
-            education_language: state.ratingData.edu_lang,
-            ratings: state.ratingData.ratings,
-            comment: document.getElementById('ratingComment').value
-        };
         const response = await fetch(`${API_BASE}/api/rating`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                user_id: tg?.initDataUnsafe?.user?.id || 'web_user',
+                ...state.ratingData.answers
+            })
         });
-        const result = await response.json();
-        if (result.success) {
-            showView('successView');
-        } else {
-            showError(result.error || 'Xatolik yuz berdi');
-        }
-    } catch (error) {
-        showError('Yuborishda xatolik');
-    } finally { hideLoading(); }
-}
 
-// ============================================
-// VIEW NAVIGATION
-// ============================================
-function showView(viewId) {
-    document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-    const view = document.getElementById(viewId);
-    if (view) {
-        view.classList.add('active');
-        state.currentView = viewId;
-    }
-    updateHeader(viewId);
-
-    // Initializers
-    if (viewId === 'complaintView') initComplaintForm();
-    if (viewId === 'ratingView') initRatingForm();
-    if (viewId === 'rulesView') renderRulesList();
-    if (viewId === 'surveyView') renderSurveyList();
-    if (viewId === 'adminDashboardView') loadAdminDashboard();
-
-    // Telegram Back Button
-    if (tg) {
-        if (viewId === 'homeView') {
-            tg.BackButton.hide();
-        } else {
-            tg.BackButton.show();
-            tg.BackButton.onClick(() => {
-                if (state.currentView === 'complaintView') prevStep();
-                else if (state.currentView === 'ratingView') prevRatingStep();
-                else showView('homeView');
-            });
-        }
+        if (response.ok) showView('successView');
+        else throw new Error('Rating submission failed');
+    } catch (err) {
+        tg?.showAlert(t('error_unknown'));
+    } finally {
+        hideLoading();
     }
 }
 
-function updateHeader(viewId) {
-    const subtitle = document.getElementById('headerSubtitle');
-    const titles = {
-        homeView: t('welcome') || 'Xush kelibsiz!',
-        complaintView: t('choose_faculty') || 'Murojaat yuborish',
-        rulesView: t('btn_rules') || 'Tartib qoidalar',
-        surveyView: t('btn_survey') || 'So\'rovnomalar',
-        ratingView: t('btn_lesson_rating') || 'Dars baholash',
-        successView: t('complaint_accepted') || 'Muvaffaqiyatli!'
-    };
-    subtitle.textContent = titles[viewId] || '';
-}
-
-// ============================================
-// COMPLAINT FORM
-// ============================================
-function initComplaintForm() {
-    state.currentStep = 1;
-    state.formData = {
-        faculty: null,
-        direction: null,
-        education_type: null,
-        education_language: null,
-        course: null,
-        complaint_type: null,
-        subject_name: '',
-        teacher_name: '',
-        message: ''
-    };
-
-    // Render faculty buttons
-    renderFacultyButtons();
-
-    // Show first step
-    showStep(1);
-    updateFormNav();
-}
-
-function showStep(stepNum) {
-    document.querySelectorAll('.form-step').forEach(step => {
-        step.classList.remove('active');
-    });
-
-    const step = document.getElementById(`step${stepNum}`);
-    if (step) {
-        step.classList.add('active');
-        state.currentStep = stepNum;
-    }
-
-    updateFormNav();
-}
-
-function nextStep() {
-    const faculty = state.formData.faculty;
-
-    // Skip education type/lang for magistratura
-    if (faculty === 'magistratura') {
-        if (state.currentStep === 2) {
-            showStep(5); // Skip to course
-            renderCourseButtons();
-            return;
-        }
-    }
-
-    // Validate current step
-    if (!validateCurrentStep()) return;
-
-    // Move to next step
-    const nextStepNum = state.currentStep + 1;
-
-    // Skip step 7 if complaint type doesn't require subject/teacher
-    if (nextStepNum === 7) {
-        const complaintType = state.config.complaint_types.find(
-            ct => ct.code === state.formData.complaint_type
-        );
-        if (!complaintType?.requires_subject && !complaintType?.requires_teacher) {
-            showStep(8);
-            return;
-        }
-    }
-
-    if (nextStepNum <= state.totalSteps) {
-        showStep(nextStepNum);
-        prepareStep(nextStepNum);
-    }
-}
-
-function prevStep() {
-    const faculty = state.formData.faculty;
-    const prevStepNum = state.currentStep - 1;
-
-    // Handle back from magistratura course selection
-    if (faculty === 'magistratura' && state.currentStep === 5) {
-        showStep(2);
-        return;
-    }
-
-    // Handle back from message step if subject/teacher not required
-    if (state.currentStep === 8) {
-        const complaintType = state.config?.complaint_types?.find(
-            ct => ct.code === state.formData.complaint_type
-        );
-        if (!complaintType?.requires_subject && !complaintType?.requires_teacher) {
-            showStep(6);
-            return;
-        }
-    }
-
-    if (prevStepNum >= 1) {
-        showStep(prevStepNum);
-    } else {
-        showView('homeView');
-    }
-}
-
-function validateCurrentStep() {
-    switch (state.currentStep) {
-        case 1:
-            return !!state.formData.faculty;
-        case 2:
-            return !!state.formData.direction;
-        case 3:
-            return !!state.formData.education_type;
-        case 4:
-            return !!state.formData.education_language;
-        case 5:
-            return !!state.formData.course;
-        case 6:
-            return !!state.formData.complaint_type;
-        case 7:
-            const ct = state.config?.complaint_types?.find(
-                c => c.code === state.formData.complaint_type
-            );
-            if (ct?.requires_subject && !document.getElementById('subjectInput').value.trim()) {
-                return false;
-            }
-            if (ct?.requires_teacher && !document.getElementById('teacherInput').value.trim()) {
-                return false;
-            }
-            state.formData.subject_name = document.getElementById('subjectInput').value.trim();
-            state.formData.teacher_name = document.getElementById('teacherInput').value.trim();
-            return true;
-        case 8:
-            const msg = document.getElementById('messageInput').value.trim();
-            if (!msg) {
-                showError(t('enter_message') || 'Xabar kiriting');
-                return false;
-            }
-            state.formData.message = msg;
-            return true;
-        default:
-            return true;
-    }
-}
-
-function prepareStep(stepNum) {
-    switch (stepNum) {
-        case 2:
-            renderDirectionButtons();
-            break;
-        case 3:
-            renderEduTypeButtons();
-            break;
-        case 4:
-            renderEduLangButtons();
-            break;
-        case 5:
-            renderCourseButtons();
-            break;
-        case 6:
-            renderComplaintTypeButtons();
-            break;
-        case 7:
-            prepareSubjectTeacherStep();
-            break;
-    }
-}
-
-function updateFormNav() {
-    const backBtn = document.getElementById('backBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const submitBtn = document.getElementById('submitBtn');
-
-    // Back button - always visible except step 1
-    backBtn.style.display = state.currentStep > 1 ? 'flex' : 'none';
-
-    // Next/Submit button
-    if (state.currentStep === 8) {
-        nextBtn.style.display = 'none';
-        submitBtn.style.display = 'flex';
-    } else {
-        nextBtn.style.display = 'flex';
-        submitBtn.style.display = 'none';
-    }
-}
-
-// ============================================
-// BUTTON RENDERERS
-// ============================================
-function renderFacultyButtons() {
-    const container = document.getElementById('facultyButtons');
-    container.innerHTML = '';
-
-    state.config?.faculties?.forEach(faculty => {
-        const btn = createOptionButton(
-            t(faculty.translation_key) || faculty.code,
-            () => selectFaculty(faculty.code)
-        );
-        container.appendChild(btn);
-    });
-}
-
-async function renderDirectionButtons() {
-    const container = document.getElementById('directionButtons');
-    container.innerHTML = '<p>Yuklanmoqda...</p>';
-
-    const data = await fetchDirections(state.formData.faculty);
-    container.innerHTML = '';
-
-    data.directions?.forEach(dir => {
-        const btn = createOptionButton(
-            t(dir.translation_key) || dir.code,
-            () => selectDirection(dir.code)
-        );
-        container.appendChild(btn);
-    });
-}
-
-function renderEduTypeButtons() {
-    const container = document.getElementById('eduTypeButtons');
-    container.innerHTML = '';
-
-    state.config?.education_types?.forEach(et => {
-        const btn = createOptionButton(
-            t(et.translation_key) || et.code,
-            () => selectEduType(et.code)
-        );
-        container.appendChild(btn);
-    });
-}
-
-function renderEduLangButtons() {
-    const container = document.getElementById('eduLangButtons');
-    container.innerHTML = '';
-
-    state.config?.education_languages?.forEach(el => {
-        const btn = createOptionButton(
-            t(el.translation_key) || el.code,
-            () => selectEduLang(el.code)
-        );
-        container.appendChild(btn);
-    });
-}
-
-function renderCourseButtons() {
-    const container = document.getElementById('courseButtons');
-    container.innerHTML = '';
-
-    const courseType = state.formData.faculty === 'magistratura' ? 'magistr' : 'regular';
-    const courses = state.config?.courses?.[courseType] || [];
-
-    courses.forEach(course => {
-        const btn = createOptionButton(
-            t(course.translation_key) || course.code,
-            () => selectCourse(course.code)
-        );
-        container.appendChild(btn);
-    });
-}
-
-function renderComplaintTypeButtons() {
-    const container = document.getElementById('complaintTypeButtons');
-    container.innerHTML = '';
-
-    state.config?.complaint_types?.forEach(ct => {
-        const btn = createOptionButton(
-            t(ct.translation_key) || ct.code,
-            () => selectComplaintType(ct.code)
-        );
-        container.appendChild(btn);
-    });
-}
-
-function prepareSubjectTeacherStep() {
-    const ct = state.config?.complaint_types?.find(
-        c => c.code === state.formData.complaint_type
-    );
-
-    const subjectField = document.getElementById('subjectField');
-    const teacherField = document.getElementById('teacherField');
-
-    subjectField.style.display = ct?.requires_subject ? 'block' : 'none';
-    teacherField.style.display = ct?.requires_teacher ? 'block' : 'none';
-
-    // Clear inputs
-    document.getElementById('subjectInput').value = '';
-    document.getElementById('teacherInput').value = '';
-}
-
-function createOptionButton(text, onClick) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'option-btn';
-    btn.textContent = text;
-    btn.onclick = (e) => {
-        // Remove selected class from siblings
-        const parent = btn.parentElement;
-        parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        onClick(e);
-    };
-    return btn;
-}
-
-// ============================================
-// SELECTION HANDLERS
-// ============================================
-function selectFaculty(code) {
-    state.formData.faculty = code;
-    highlightSelected('facultyButtons', code);
-    nextStep();
-}
-
-function selectDirection(code) {
-    state.formData.direction = code;
-    highlightSelected('directionButtons', code);
-    nextStep();
-}
-
-function selectEduType(code) {
-    state.formData.education_type = code;
-    highlightSelected('eduTypeButtons', code);
-    nextStep();
-}
-
-function selectEduLang(code) {
-    state.formData.education_language = code;
-    highlightSelected('eduLangButtons', code);
-    nextStep();
-}
-
-function selectCourse(code) {
-    state.formData.course = code;
-    highlightSelected('courseButtons', code);
-    nextStep();
-}
-
-function selectComplaintType(code) {
-    state.formData.complaint_type = code;
-    highlightSelected('complaintTypeButtons', code);
-    nextStep();
-}
-
-function highlightSelected(containerId, selectedCode) {
-    const container = document.getElementById(containerId);
-    container.querySelectorAll('.option-btn').forEach(btn => {
-        btn.classList.remove('selected');
-    });
-    // The clicked button is highlighted via the selection flow
-}
-
-// ============================================
-// FORM SUBMISSION
-// ============================================
-document.getElementById('complaintForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    if (!validateCurrentStep()) return;
-
-    await submitComplaint(state.formData);
-});
-
-function resetForm() {
-    initComplaintForm();
-    showView('homeView');
-}
-
-// ============================================
-// RULES & SURVEYS
-// ============================================
-function renderRulesList() {
-    const container = document.getElementById('rulesList');
-    container.innerHTML = '';
-
-    // Rules from translations
-    const ruleTypes = ['grading', 'exam', 'general'];
-    ruleTypes.forEach(type => {
-        const card = document.createElement('div');
-        card.className = 'rule-card';
-        card.onclick = () => showRuleDetail(type);
-
-        const icons = { grading: '📊', exam: '📝', general: '📋' };
-        card.innerHTML = `
-            <span class="rule-icon">${icons[type]}</span>
-            <div class="rule-info">
-                <span class="rule-title">${t('btn_' + type)}</span>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-}
-
-function showRuleDetail(type) {
-    const modal = document.getElementById('ruleDetail');
-    const title = document.getElementById('ruleTitle');
-    const body = document.getElementById('ruleBody');
-
-    title.textContent = t('btn_' + type);
-    // In actual app, we'd have rules_grading translation
-    body.innerHTML = t('rules_' + type).replace(/\n/g, '<br>');
-
-    modal.style.display = 'flex';
-}
-
-function hideRuleDetail() {
-    document.getElementById('ruleDetail').style.display = 'none';
-}
-
-function renderSurveyList() {
-    const container = document.getElementById('surveyList');
-    container.innerHTML = '';
-
-    state.config?.surveys?.forEach(survey => {
-        const card = document.createElement('a');
-        card.className = 'survey-card';
-        card.href = survey.url;
-        card.target = '_blank';
-
-        card.innerHTML = `
-            <span class="survey-icon">📊</span>
-            <div class="survey-info">
-                <span class="survey-title">${t(survey.translation_key)}</span>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-}
-
-// ============================================
-// ADMIN LOGIC
-// ============================================
+/**
+ * ADMIN FUNCTIONS
+ */
 async function loadAdminDashboard() {
     showLoading();
     try {
-        const response = await fetch(`${API_BASE}/api/admin/dashboard`);
-        const data = await response.json();
-
-        document.getElementById('statsToday').textContent = data.today || 0;
-        document.getElementById('statsWeek').textContent = data.week || 0;
-        document.getElementById('statsMonth').textContent = data.month || 0;
-    } catch (error) {
-        console.error('Error loading dashboard:', error);
+        const resp = await fetch(`${API_BASE}/api/admin/dashboard`);
+        const stats = await resp.json();
+        document.getElementById('statsToday').textContent = stats.today || 0;
+        document.getElementById('statsWeek').textContent = stats.week || 0;
+        document.getElementById('statsMonth').textContent = stats.month || 0;
+    } catch (err) {
+        console.error('Admin dashboard failed', err);
     } finally {
         hideLoading();
     }
@@ -680,320 +483,203 @@ async function loadAdminDashboard() {
 async function showAdminSettings(type) {
     state.currentSettingType = type;
     showView('adminSettingsView');
-
-    const titleEl = document.getElementById('settingsTitle');
-    const titles = {
-        admins: t('btn_manage_admins'),
-        faculties: t('btn_manage_faculties'),
-        directions: t('btn_manage_directions'),
-        questions: t('btn_manage_questions'),
-        translations: t('btn_manage_translations')
-    };
-    titleEl.textContent = titles[type] || type;
-
+    document.getElementById('settingsTitle').textContent = t(`btn_manage_${type}`);
     loadSettingsList(type);
 }
 
 async function loadSettingsList(type) {
     const container = document.getElementById('settingsList');
-    container.innerHTML = '<p>Yuklanmoqda...</p>';
+    container.innerHTML = '<div class="py-10 text-center text-slate-400">Loading settings...</div>';
 
     try {
-        const response = await fetch(`${API_BASE}/api/admin/settings/${type}`);
-        const data = await response.json();
-
+        const resp = await fetch(`${API_BASE}/api/admin/settings/${type}`);
+        const data = await resp.json();
         container.innerHTML = '';
+
         data.items?.forEach(item => {
-            const el = document.createElement('div');
-            el.className = 'settings-item';
+            const card = document.createElement('div');
+            card.className = 'card flex items-center justify-between p-4';
 
-            // Simplified display based on type
-            let name = item[0] || 'Unknown';
-            let detail = item[1] || '';
+            // Format display label
+            let label = item[1] || item[0];
+            if (type === 'questions') label = t(item[1]);
 
-            if (type === 'admins') { name = item[1] || item[0]; detail = `ID: ${item[0]}`; }
-            if (type === 'questions') { name = t(item[1]); detail = `Type: ${item[2]}`; }
-
-            el.innerHTML = `
-                <div class="settings-info">
-                    <span class="settings-name">${name}</span>
-                    <span class="settings-detail">${detail}</span>
+            card.innerHTML = `
+                <div>
+                    <p class="font-bold text-sm text-slate-800 dark:text-slate-200">${label}</p>
+                    <p class="text-[10px] text-slate-400 dark:text-slate-500 font-mono italic">${item[0]}</p>
                 </div>
-                <div class="settings-actions">
-                    <button class="action-icon edit-icon"><i class="fas fa-edit"></i></button>
-                    <button class="action-icon delete-icon"><i class="fas fa-trash"></i></button>
+                <div class="flex gap-2">
+                    <button class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-500 flex items-center justify-center active:scale-90 transition-all">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="deleteSettingItem('${type}', '${item[0]}')" class="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-500 flex items-center justify-center active:scale-90 transition-all">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
                 </div>
             `;
-            container.appendChild(el);
+            container.appendChild(card);
         });
-    } catch (error) {
-        container.innerHTML = '<p>Xatolik yuz berdi</p>';
-    }
-}
 
-// ============================================
-// RATING FORM (CORRECTED)
-// ============================================
-function initRatingForm() {
-    state.ratingData = {
-        step: 1,
-        faculty: null,
-        direction: null,
-        course: null,
-        edu_type: null,
-        edu_lang: null,
-        subject_name: '',
-        teacher_name: '',
-        ratings: {},
-        comment: ''
-    };
-    renderRatingFacultyButtons();
-    showRatingStep(1);
-}
-
-function showRatingStep(step) {
-    state.ratingData.step = step;
-    document.querySelectorAll('#ratingForm .form-step').forEach(s => s.classList.remove('active'));
-
-    const stepEl = document.getElementById(`ratingStep${step}`);
-    if (stepEl) stepEl.classList.add('active');
-
-    // Nav logic
-    document.getElementById('ratingBackBtn').style.display = step > 1 ? 'flex' : 'none';
-    document.getElementById('ratingSubmitBtn').style.display = step === 9 ? 'flex' : 'none'; // Step 9 is submit
-}
-
-function renderRatingFacultyButtons() {
-    const container = document.getElementById('ratingFacultyButtons');
-    container.innerHTML = '';
-    state.config?.faculties?.forEach(f => {
-        const btn = createOptionButton(t(f.translation_key), () => {
-            state.ratingData.faculty = f.code;
-            nextRatingStep();
-        });
-        container.appendChild(btn);
-    });
-}
-
-function nextRatingStep() {
-    const next = state.ratingData.step + 1;
-    const faculty = state.ratingData.faculty;
-
-    // Skip education type/lang for magistratura
-    if (faculty === 'magistratura') {
-        if (state.ratingData.step === 2) { // If currently on direction step
-            showRatingStep(5); // Skip to course selection
-            renderRatingCourseButtons();
-            return;
+        if (!data.items?.length) {
+            container.innerHTML = '<div class="py-10 text-center text-slate-400 italic">Ma\'lumot topilmadi</div>';
         }
+
+        if (window.lucide) window.lucide.createIcons();
+    } catch (err) {
+        container.innerHTML = '<div class="py-10 text-center text-red-400">Error loading settings</div>';
     }
-
-    if (next === 2) renderRatingDirectionButtons();
-    else if (next === 3) renderRatingEduTypeButtons();
-    else if (next === 4) renderRatingEduLangButtons();
-    else if (next === 5) renderRatingCourseButtons();
-    else if (next === 6) renderRatingSubjectStep();
-    else if (next === 7) renderRatingTeacherStep();
-    else if (next === 8) renderRatingQuestions();
-    else if (next === 9) renderRatingCommentStep();
-
-    showRatingStep(next);
 }
 
-async function renderRatingEduTypeButtons() {
-    const container = getOrCreateRatingStepContainer('ratingStep3', 'choose_edu_type', 'ratingEduTypeButtons');
-    container.innerHTML = '';
-    state.config?.education_types?.forEach(et => {
-        const btn = createOptionButton(t(et.translation_key), () => {
-            state.ratingData.edu_type = et.code;
-            nextRatingStep();
-        });
-        container.appendChild(btn);
-    });
-}
-
-async function renderRatingEduLangButtons() {
-    const container = getOrCreateRatingStepContainer('ratingStep4', 'choose_edu_lang', 'ratingEduLangButtons');
-    container.innerHTML = '';
-    state.config?.education_languages?.forEach(el => {
-        const btn = createOptionButton(t(el.translation_key), () => {
-            state.ratingData.edu_lang = el.code;
-            nextRatingStep();
-        });
-        container.appendChild(btn);
-    });
-}
-
-async function renderRatingCourseButtons() {
-    const container = getOrCreateRatingStepContainer('ratingStep5', 'choose_course', 'ratingCourseButtons');
-    container.innerHTML = '';
-    const courseType = state.ratingData.faculty === 'magistratura' ? 'magistr' : 'regular';
-    state.config?.courses?.[courseType]?.forEach(c => {
-        const btn = createOptionButton(t(c.translation_key), () => {
-            state.ratingData.course = c.code;
-            nextRatingStep();
-        });
-        container.appendChild(btn);
-    });
-}
-
-function renderRatingSubjectStep() {
-    const container = getOrCreateRatingStepContainer('ratingStep6', 'enter_subject', 'ratingSubjectInput');
-    container.innerHTML = `
-        <input type="text" id="ratingSubject" class="form-input" placeholder="${t('enter_subject')}" onchange="state.ratingData.subject_name = this.value">
-        <button class="nav-btn primary" onclick="nextRatingStep()">${t('btn_next')}</button>
+function openAddModal() {
+    const type = state.currentSettingType;
+    const content = document.getElementById('modalContent');
+    content.innerHTML = `
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold">${t('btn_add_new')}</h2>
+            <button onclick="closeModal()" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="space-y-4">
+            <input type="text" id="addInput1" class="input-field" placeholder="ID / Code">
+            <input type="text" id="addInput2" class="input-field" placeholder="Name / Title">
+            <button onclick="saveNewSetting()" class="btn-primary w-full mt-4">Save</button>
+        </div>
     `;
+    openModal();
 }
 
-function renderRatingTeacherStep() {
-    const container = getOrCreateRatingStepContainer('ratingStep7', 'enter_teacher', 'ratingTeacherInput');
-    container.innerHTML = `
-        <input type="text" id="ratingTeacher" class="form-input" placeholder="${t('enter_teacher')}" onchange="state.ratingData.teacher_name = this.value">
-        <button class="nav-btn primary" onclick="nextRatingStep()">${t('btn_next')}</button>
+async function saveNewSetting() {
+    // Basic Add logic (Simplified)
+    tg?.showAlert('Bu qism tez orada bot yordamida yakunlanadi (Backend check)');
+    closeModal();
+}
+
+async function deleteSettingItem(type, id) {
+    if (!confirm(t('confirm_delete') || 'O\'chirshni tasdiqlaysizmi?')) return;
+    showLoading();
+    try {
+        const resp = await fetch(`${API_BASE}/api/admin/settings/${type}/${id}`, { method: 'DELETE' });
+        if (resp.ok) loadSettingsList(type);
+        else throw new Error('Delete failed');
+    } catch (err) {
+        tg?.showAlert(t('error_unknown'));
+    } finally {
+        hideLoading();
+    }
+}
+
+window.openAddModal = openAddModal;
+window.saveNewSetting = saveNewSetting;
+window.deleteSettingItem = deleteSettingItem;
+
+/**
+ * HELPERS
+ */
+function createOptionCard(label, iconName, onClick) {
+    const div = document.createElement('div');
+    div.className = 'card flex items-center gap-4 hover:border-primary cursor-pointer active:scale-95 transition-all';
+    div.onclick = onClick;
+    div.innerHTML = `
+        <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+            <i data-lucide="${iconName}" class="w-5 h-5"></i>
+        </div>
+        <span class="font-semibold">${label}</span>
     `;
+    return div;
 }
 
-function renderRatingCommentStep() {
-    // Already in HTML as step 7, but let's make it step 9
-    const step7 = document.getElementById('ratingStep7');
-    if (step7) step7.id = 'ratingStep9'; // Corrected ID to match the new step number
-    // Ensure the content is correct for the comment step, assuming it's pre-existing in HTML
-    // If not, it would need to be created similar to other steps.
-}
-
-function getOrCreateRatingStepContainer(stepId, titleKey, buttonsId) {
-    let stepEl = document.getElementById(stepId);
-    if (!stepEl) {
-        stepEl = document.createElement('div');
-        stepEl.id = stepId;
-        stepEl.className = 'form-step';
-        stepEl.innerHTML = `
-            <label class="form-label" data-i18n="${titleKey}">${t(titleKey)}</label>
-            <div id="${buttonsId}" class="button-group"></div>
-        `;
-        // Insert before the comment step, which is now ratingStep9
-        document.getElementById('ratingForm').insertBefore(stepEl, document.getElementById('ratingStep9') || document.getElementById('ratingQuestionsStep'));
-    }
-    // If buttonsId is for an input, return the stepEl itself or the input container
-    if (buttonsId.includes('Input')) {
-        return stepEl;
-    }
-    return document.getElementById(buttonsId);
-}
-
-function renderRatingQuestions() {
-    const container = document.getElementById('questionContainer');
+/**
+ * RULES & SURVEYS
+ */
+function renderRules() {
+    const container = document.getElementById('rulesList');
     container.innerHTML = '';
+    const rules = [
+        { id: 'general', title: 'btn_rules_general', icon: 'info' },
+        { id: 'grading', title: 'btn_rules_grading', icon: 'award' },
+        { id: 'exam', title: 'btn_rules_exam', icon: 'file-text' }
+    ];
 
-    state.config?.rating_questions?.forEach(q => {
-        const item = document.createElement('div');
-        item.className = 'question-item';
-        item.innerHTML = `
-            <span class="question-text">${t(q.translation_key)}</span>
-            <div class="rating-options" id="q_${q.number}">
-                ${[1, 2, 3, 4, 5].map(n => `
-                    <button class="rating-btn" onclick="setRating(${q.number}, ${n})">${n}</button>
-                `).join('')}
-            </div>
-        `;
-        container.appendChild(item);
+    rules.forEach(rule => {
+        const card = createOptionCard(t(rule.title), rule.icon, () => openRuleDetail(rule.id));
+        container.appendChild(card);
     });
 }
 
-function prevRatingStep() {
-    if (state.ratingData.step > 1) {
-        showRatingStep(state.ratingData.step - 1);
-    } else {
-        showView('homeView');
-    }
+function openRuleDetail(ruleId) {
+    const content = document.getElementById('modalContent');
+    const text = t(`rules_${ruleId}_content`) || 'Tez orada...';
+    content.innerHTML = `
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold">${t(`btn_rules_${ruleId}`)}</h2>
+            <button onclick="closeModal()" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-400">
+            ${text.replace(/\n/g, '<br>')}
+        </div>
+    `;
+    openModal();
 }
 
-async function renderRatingDirectionButtons() {
-    const container = document.getElementById('ratingDirectionButtons');
-    if (!container) {
-        // Create container if it doesn't exist in index.html (I should add it)
-        const step2 = document.createElement('div');
-        step2.id = 'ratingStep2';
-        step2.className = 'form-step';
-        step2.innerHTML = `
-            <label class="form-label" data-i18n="choose_direction">Yo'nalishni tanlang</label>
-            <div id="ratingDirectionButtons" class="button-group"></div>
-        `;
-        document.getElementById('ratingForm').insertBefore(step2, document.getElementById('ratingQuestionsStep'));
-    }
-    const target = document.getElementById('ratingDirectionButtons');
-    target.innerHTML = '<p>Yuklanmoqda...</p>';
-    const data = await fetchDirections(state.ratingData.faculty);
-    target.innerHTML = '';
-    data.directions?.forEach(dir => {
-        const btn = createOptionButton(t(dir.translation_key), () => {
-            state.ratingData.direction = dir.code;
-            nextRatingStep();
-        });
-        target.appendChild(btn);
+function renderSurveys() {
+    const container = document.getElementById('surveyList');
+    container.innerHTML = '';
+    state.config.surveys?.forEach(s => {
+        const card = createOptionCard(t(s.translation_key), 'external-link', () => tg?.openLink(s.url));
+        container.appendChild(card);
     });
 }
 
-// ============================================
-// TRANSLATION FUNCTIONS
-// ============================================
-function t(key) {
-    return state.translations[key] || key;
+/**
+ * MODALS
+ */
+function openModal() {
+    const modal = document.getElementById('customModal');
+    const content = document.getElementById('modalContent');
+    modal.classList.remove('hidden');
+    setTimeout(() => content.classList.replace('translate-y-full', 'translate-y-0'), 10);
+    if (window.lucide) window.lucide.createIcons();
 }
 
-function applyTranslations() {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        const translation = t(key);
-        if (translation && translation !== key) {
-            el.textContent = translation;
-        }
-    });
+function closeModal() {
+    const modal = document.getElementById('customModal');
+    const content = document.getElementById('modalContent');
+    content.classList.replace('translate-y-0', 'translate-y-full');
+    setTimeout(() => modal.classList.add('hidden'), 300);
 }
 
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
-function showLoading() {
-    document.getElementById('loadingOverlay').classList.add('active');
+window.closeModal = closeModal;
+
+/**
+ * RESET & UTILS
+ */
+function resetForm() {
+    initApp();
 }
 
-function hideLoading() {
-    document.getElementById('loadingOverlay').classList.remove('active');
-}
-
-function showError(message) {
-    if (tg) {
-        tg.showAlert(message);
-    } else {
-        alert(message);
-    }
-}
-
-// ============================================
-// INITIALIZATION
-// ============================================
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Mini App loading...');
-
-    // Initialize Telegram
-    initTelegram();
-
-    // Fetch config
-    await fetchConfig();
-
-    console.log('Mini App ready!');
-});
-
-// Make functions globally available
-window.showView = showView;
-window.nextStep = nextStep;
-window.prevStep = prevStep;
 window.resetForm = resetForm;
-window.showRuleDetail = showRuleDetail;
-window.hideRuleDetail = hideRuleDetail;
+
+function showLoading() { document.getElementById('loadingOverlay').classList.remove('hidden'); }
+function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
+
+function initNavigation() {
+    // Close lang menu on body click
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.lang-switcher')) document.getElementById('langMenu').classList.add('hidden');
+    });
+}
+
+// Global Exports
+window.showView = showView;
 window.toggleLangMenu = toggleLangMenu;
-window.nextRatingStep = nextRatingStep;
-window.prevRatingStep = prevRatingStep;
+window.changeLanguage = changeLanguage;
+window.saveRatingInput = saveRatingInput;
 window.submitRating = submitRating;
-window.setRating = setRating;
+window.showAdminSettings = showAdminSettings;
+
+// Start the app
+initApp();

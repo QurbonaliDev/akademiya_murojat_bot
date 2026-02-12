@@ -1,279 +1,361 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="uz" class="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Akademiya Murojaat</title>
+    <title>Akademiya | Murojaat Bot</title>
 
-    <!-- Telegram WebApp SDK -->
+    <!-- Scripts & Styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="css/style.css?v=1.0.1">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3a86ff',
+                        secondary: '#8338ec',
+                        accent: '#ff006e',
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer base {
+            body { @apply bg-slate-50 text-slate-900 dark:bg-dark-bg dark:text-slate-100 transition-colors duration-300 overflow-x-hidden pt-safe pb-safe; }
+        }
+        @layer components {
+            .glass { @apply bg-white/70 dark:bg-slate-800/60 backdrop-blur-md border border-white/20 dark:border-slate-700/30; }
+            .btn-primary { @apply bg-primary hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50; }
+            .btn-secondary { @apply bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 font-semibold py-3 px-6 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2; }
+            .nav-item { @apply flex flex-col items-center gap-1 p-2 text-slate-400 dark:text-slate-500 transition-all; }
+            .nav-item.active { @apply text-primary dark:text-primary scale-110; }
+            .card { @apply bg-white dark:bg-dark-card border border-slate-100 dark:border-dark-border rounded-3xl p-5 shadow-sm; }
+            .view { @apply hidden opacity-0 translate-y-4 transition-all duration-300; }
+            .view.active { @apply block opacity-100 translate-y-0; }
+            .input-field { @apply w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 px-4 focus:ring-2 focus:ring-primary outline-none transition-all; }
+            .option-card { @apply bg-white dark:bg-slate-800 border-2 border-transparent hover:border-primary/30 p-4 rounded-2xl transition-all cursor-pointer flex items-center gap-4 active:scale-98; }
+            .option-card.selected { @apply border-primary bg-primary/5 dark:bg-primary/10; }
+        }
+        
+        .pt-safe { padding-top: env(safe-area-inset-top); }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        
+        /* Custom Animations */
+        @keyframes pulse-soft {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+    </style>
 </head>
 
-<body>
-    <div id="app">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-top">
-                <h1 class="header-title">📚 Akademiya</h1>
-                <div class="lang-switcher">
-                    <button id="currentLangBtn" onclick="toggleLangMenu()">
-                        <span id="currentLang">UZ</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div id="langMenu" class="lang-menu"></div>
-                </div>
-                <button id="adminTabBtn" class="admin-tab-btn" style="display: none;"
-                    onclick="showView('adminDashboardView')">
-                    <i class="fas fa-user-shield"></i>
-                </button>
-            </div>
-            <p class="header-subtitle" id="headerSubtitle">Murojaat yuborish</p>
-        </header>
+<body class="font-sans antialiased">
 
-        <!-- Main Content -->
-        <main class="main-content">
-
-            <!-- Home View -->
-            <section id="homeView" class="view active">
-                <div class="menu-grid">
-                    <button class="menu-card" onclick="showView('complaintView')">
-                        <span class="menu-icon">📝</span>
-                        <span class="menu-text" data-i18n="btn_complaint">Murojaat qoldirish</span>
-                    </button>
-                    <button class="menu-card" onclick="showView('rulesView')">
-                        <span class="menu-icon">📋</span>
-                        <span class="menu-text" data-i18n="btn_rules">Tartib qoidalar</span>
-                    </button>
-                    <button class="menu-card" onclick="showView('surveyView')">
-                        <span class="menu-icon">📊</span>
-                        <span class="menu-text" data-i18n="btn_survey">So'rovnomalar</span>
-                    </button>
-                    <button class="menu-card" onclick="showView('ratingView')">
-                        <span class="menu-icon">⭐</span>
-                        <span class="menu-text" data-i18n="btn_lesson_rating">Dars baholash</span>
-                    </button>
-                </div>
-            </section>
-
-            <!-- Complaint Form View -->
-            <section id="complaintView" class="view">
-                <form id="complaintForm" class="form">
-                    <!-- Step 1: Faculty -->
-                    <div class="form-step active" id="step1">
-                        <label class="form-label" data-i18n="choose_faculty">Fakultetni tanlang</label>
-                        <div id="facultyButtons" class="button-group"></div>
-                    </div>
-
-                    <!-- Step 2: Direction -->
-                    <div class="form-step" id="step2">
-                        <label class="form-label" data-i18n="choose_direction">Yo'nalishni tanlang</label>
-                        <div id="directionButtons" class="button-group"></div>
-                    </div>
-
-                    <!-- Step 3: Education Type (not for magistratura) -->
-                    <div class="form-step" id="step3">
-                        <label class="form-label" data-i18n="choose_edu_type">Ta'lim turini tanlang</label>
-                        <div id="eduTypeButtons" class="button-group"></div>
-                    </div>
-
-                    <!-- Step 4: Education Language -->
-                    <div class="form-step" id="step4">
-                        <label class="form-label" data-i18n="choose_edu_lang">Ta'lim tilini tanlang</label>
-                        <div id="eduLangButtons" class="button-group"></div>
-                    </div>
-
-                    <!-- Step 5: Course -->
-                    <div class="form-step" id="step5">
-                        <label class="form-label" data-i18n="choose_course">Kursni tanlang</label>
-                        <div id="courseButtons" class="button-group"></div>
-                    </div>
-
-                    <!-- Step 6: Complaint Type -->
-                    <div class="form-step" id="step6">
-                        <label class="form-label" data-i18n="choose_complaint_type">Murojaat turini tanlang</label>
-                        <div id="complaintTypeButtons" class="button-group"></div>
-                    </div>
-
-                    <!-- Step 7: Subject & Teacher (conditional) -->
-                    <div class="form-step" id="step7">
-                        <div id="subjectField" class="form-group">
-                            <label class="form-label" data-i18n="enter_subject">Fan nomini kiriting</label>
-                            <input type="text" id="subjectInput" class="form-input" placeholder="Masalan: Matematika">
-                        </div>
-                        <div id="teacherField" class="form-group" style="margin-top: 16px;">
-                            <label class="form-label" data-i18n="enter_teacher">O'qituvchi ismini kiriting</label>
-                            <input type="text" id="teacherInput" class="form-input" placeholder="Masalan: Aliyev A.A.">
-                        </div>
-                    </div>
-
-                    <!-- Step 8: Message -->
-                    <div class="form-step" id="step8">
-                        <label class="form-label" data-i18n="enter_message">Xabaringizni yozing</label>
-                        <div class="anonymous-notice" data-i18n="anonymous_notice">
-                            🔒 Sizning murojaatingiz anonim yuboriladi
-                        </div>
-                        <textarea id="messageInput" class="form-textarea" rows="5"
-                            placeholder="Murojaatingizni bu yerga yozing..."></textarea>
-                    </div>
-
-                    <!-- Navigation -->
-                    <div class="form-nav">
-                        <button type="button" class="btn btn-secondary" id="backBtn" onclick="prevStep()"
-                            style="display: none;">
-                            <span data-i18n="btn_back">⬅️ Orqaga</span>
-                        </button>
-                        <button type="button" class="btn btn-primary" id="nextBtn" onclick="nextStep()"
-                            style="display: none;">
-                            <span data-i18n="btn_next">Keyingi ➡️</span>
-                        </button>
-                        <button type="submit" class="btn btn-success" id="submitBtn" style="display: none;">
-                            <span data-i18n="btn_submit">✅ Yuborish</span>
-                        </button>
-                    </div>
-                </form>
-            </section>
-
-            <!-- Rules View -->
-            <section id="rulesView" class="view">
-                <div id="rulesList" class="rules-list">
-                    <!-- Rules cards will be dynamic -->
-                </div>
-                <div id="ruleDetail" class="rule-detail" style="display: none;">
-                    <div class="rule-content">
-                        <button class="rule-close" onclick="hideRuleDetail()">&times;</button>
-                        <h3 id="ruleTitle" class="rule-title"></h3>
-                        <div id="ruleBody" class="rule-body"></div>
-                    </div>
-                </div>
-                <button class="btn btn-secondary btn-full" onclick="showView('homeView')">
-                    <span data-i18n="btn_back">⬅️ Orqaga</span>
-                </button>
-            </section>
-
-            <!-- Survey View -->
-            <section id="surveyView" class="view">
-                <div id="surveyList" class="survey-list">
-                    <!-- Surveys will be dynamic -->
-                </div>
-                <button class="btn btn-secondary btn-full" onclick="showView('homeView')">
-                    <span data-i18n="btn_back">⬅️ Orqaga</span>
-                </button>
-            </section>
-
-            <!-- Rating View -->
-            <section id="ratingView" class="view">
-                <form id="ratingForm" class="rating-form">
-                    <!-- Step 1: Faculty -->
-                    <div id="ratingStep1" class="form-step active">
-                        <label class="form-label" data-i18n="choose_faculty">Fakultetni tanlang</label>
-                        <div id="ratingFacultyButtons" class="button-group"></div>
-                    </div>
-
-                    <!-- Steps 2-5 will be injected by JS -->
-
-                    <!-- Step 6: Questions -->
-                    <div id="ratingQuestionsStep" class="form-step">
-                        <div id="questionContainer"></div>
-                    </div>
-
-                    <!-- Step 7: Comments -->
-                    <div id="ratingStep7" class="form-step">
-                        <label class="form-label" data-i18n="enter_comment">Izoh qoldiring (ixtiyoriy)</label>
-                        <textarea id="ratingComment" class="form-textarea"
-                            placeholder="Dars haqida fikringiz..."></textarea>
-                    </div>
-
-                    <div class="form-nav">
-                        <button type="button" id="ratingBackBtn" class="nav-btn secondary" onclick="prevRatingStep()"
-                            style="display: none;">
-                            <span data-i18n="btn_back">Orqaga</span>
-                        </button>
-                        <button type="button" id="ratingSubmitBtn" class="nav-btn primary" onclick="submitRating()"
-                            style="display: none;">
-                            <span data-i18n="btn_send">Yuborish</span>
-                        </button>
-                    </div>
-                </form>
-            </section>
-
-            <!-- ADMIN DASHBOARD VIEW -->
-            <section id="adminDashboardView" class="view">
-                <div class="stats-grid">
-                    <div class="stats-card">
-                        <span class="stats-label" data-i18n="stats_today">Bugun</span>
-                        <span id="statsToday" class="stats-value">0</span>
-                    </div>
-                    <div class="stats-card">
-                        <span class="stats-label" data-i18n="stats_week">Hafta</span>
-                        <span id="statsWeek" class="stats-value">0</span>
-                    </div>
-                    <div class="stats-card">
-                        <span class="stats-label" data-i18n="stats_month">Oy</span>
-                        <span id="statsMonth" class="stats-value">0</span>
-                    </div>
-                </div>
-
-                <div class="admin-menu">
-                    <button class="menu-card glass" onclick="showAdminSettings('admins')">
-                        <i class="fas fa-users-cog"></i>
-                        <span data-i18n="btn_manage_admins">Adminlar</span>
-                    </button>
-                    <button class="menu-card glass" onclick="showAdminSettings('faculties')">
-                        <i class="fas fa-university"></i>
-                        <span data-i18n="btn_manage_faculties">Fakultetlar</span>
-                    </button>
-                    <button class="menu-card glass" onclick="showAdminSettings('directions')">
-                        <i class="fas fa-graduation-cap"></i>
-                        <span data-i18n="btn_manage_directions">Yo'nalishlar</span>
-                    </button>
-                    <button class="menu-card glass" onclick="showAdminSettings('questions')">
-                        <i class="fas fa-question-circle"></i>
-                        <span data-i18n="btn_manage_questions">Savollar</span>
-                    </button>
-                    <button class="menu-card glass" onclick="showAdminSettings('translations')">
-                        <i class="fas fa-language"></i>
-                        <span data-i18n="btn_manage_translations">Tarjimalar</span>
-                    </button>
-                </div>
-            </section>
-
-            <!-- ADMIN SETTINGS VIEW -->
-            <section id="adminSettingsView" class="view">
-                <div class="settings-header">
-                    <h2 id="settingsTitle">Settings</h2>
-                    <button class="add-btn" onclick="openAddModal()">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                </div>
-                <div id="settingsList" class="settings-list"></div>
-            </section>
-
-            <!-- Success View -->
-            <section id="successView" class="view">
-                <div class="success-content">
-                    <span class="success-icon">✅</span>
-                    <h2 class="success-title" data-i18n="complaint_accepted">Murojaatingiz qabul qilindi!</h2>
-                    <p class="success-text">Rahmat! Sizning murojaatingiz ko'rib chiqiladi.</p>
-                </div>
-                <button class="btn btn-primary btn-full" onclick="resetForm()">
-                    <span data-i18n="btn_back_main">🏠 Bosh menyu</span>
-                </button>
-            </section>
-
-        </main>
+    <!-- Loading Screen -->
+    <div id="loadingOverlay" class="fixed inset-0 z-[60] glass flex items-center justify-center">
+        <div class="flex flex-col items-center gap-4">
+            <div class="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            <p class="text-sm font-medium animate-pulse" data-i18n="loading">Yuklanmoqda...</p>
+        </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-spinner"></div>
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-40 glass pt-safe px-4 pb-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div
+                class="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                <i data-lucide="book-open" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold leading-tight" id="headerTitle">Akademiya</h1>
+                <p class="text-[10px] text-slate-500 font-medium tracking-wider uppercase" id="headerSubtitle"
+                    data-i18n="murojaat_bot">Murojaat Bot</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Admin Btn -->
+            <button id="adminTabBtn" onclick="showView('adminDashboardView')"
+                class="hidden w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 active:scale-90 transition-all">
+                <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </button>
+            <!-- Lang Switcher -->
+            <div class="relative">
+                <button id="currentLangBtn" onclick="toggleLangMenu()"
+                    class="h-10 px-3 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center gap-2 text-xs font-bold active:scale-90 transition-all">
+                    <span id="currentLang">UZ</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3"></i>
+                </button>
+                <div id="langMenu"
+                    class="hidden absolute top-full right-0 mt-2 w-32 glass rounded-2xl shadow-xl border p-2 flex flex-col gap-1">
+                    <!-- Languages will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="mainContent" class="pt-24 pb-32 px-4 max-w-lg mx-auto min-h-screen">
+
+        <!-- HOME VIEW -->
+        <section id="homeView" class="view space-y-6">
+            <div class="card bg-gradient-to-br from-primary to-secondary text-white border-0 overflow-hidden relative">
+                <div class="relative z-10">
+                    <h2 class="text-2xl font-bold mb-2" data-i18n="welcome_title">Xush kelibsiz!</h2>
+                    <p class="text-white/80 text-sm leading-relaxed" data-i18n="welcome_text">Murojaat yo'llash yoki
+                        ta'lim sifatini baholash uchun pastdagi bo'limlarni tanlang.</p>
+                </div>
+                <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="showView('complaintView')"
+                    class="card group hover:border-primary transition-all text-left space-y-3">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 group-hover:bg-primary group-hover:text-white transition-all">
+                        <i data-lucide="message-square-plus" class="w-6 h-6"></i>
+                    </div>
+                    <p class="font-bold text-sm" data-i18n="btn_complaint">Murojaat yo'llash</p>
+                </button>
+                <button onclick="showView('ratingView')"
+                    class="card group hover:border-accent transition-all text-left space-y-3">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-pink-50 dark:bg-pink-900/30 flex items-center justify-center text-pink-600 group-hover:bg-accent group-hover:text-white transition-all">
+                        <i data-lucide="star" class="w-6 h-6"></i>
+                    </div>
+                    <p class="font-bold text-sm" data-i18n="btn_lesson_rating">Darsni baholash</p>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest pl-2" data-i18n="other_services">
+                    Boshqa xizmatlar</h3>
+                <div class="space-y-3">
+                    <a href="javascript:void(0)" onclick="showView('rulesView')"
+                        class="card flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                                <i data-lucide="file-text" class="w-5 h-5"></i>
+                            </div>
+                            <span class="font-semibold" data-i18n="btn_rules">Tartib qoidalar</span>
+                        </div>
+                        <i data-lucide="chevron-right"
+                            class="w-5 h-5 text-slate-300 group-hover:text-primary transition-all"></i>
+                    </a>
+                    <a href="javascript:void(0)" onclick="showView('surveyView')"
+                        class="card flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                                <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+                            </div>
+                            <span class="font-semibold" data-i18n="btn_surveys">So'rovnomalar</span>
+                        </div>
+                        <i data-lucide="chevron-right"
+                            class="w-5 h-5 text-slate-300 group-hover:text-primary transition-all"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- COMPLAINT VIEW -->
+        <section id="complaintView" class="view space-y-6">
+            <div class="flex items-center gap-4 mb-6">
+                <button onclick="showView('homeView')"
+                    class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-all">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <h2 class="text-xl font-bold" data-i18n="btn_complaint">Murojaat yo'llash</h2>
+            </div>
+
+            <div id="complaintForm" class="space-y-6">
+                <!-- Steps will be injected here -->
+                <div id="complaintStepContainer" class="space-y-4"></div>
+            </div>
+        </section>
+
+        <!-- RATING VIEW -->
+        <section id="ratingView" class="view space-y-6">
+            <div class="flex items-center gap-4 mb-6">
+                <button onclick="showView('homeView')"
+                    class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-all">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <h2 class="text-xl font-bold" data-i18n="btn_lesson_rating">Darsni baholash</h2>
+            </div>
+
+            <div id="ratingForm" class="space-y-6">
+                <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div id="ratingProgressBar" class="bg-primary h-full transition-all duration-500"
+                        style="width: 10%;"></div>
+                </div>
+                <div id="ratingStepContainer" class="space-y-4 pt-2"></div>
+            </div>
+        </section>
+
+        <!-- RULES VIEW -->
+        <section id="rulesView" class="view space-y-6">
+            <h2 class="text-xl font-bold px-2" data-i18n="btn_rules">Tartib qoidalar</h2>
+            <div id="rulesList" class="space-y-3"></div>
+        </section>
+
+        <!-- SURVEY VIEW -->
+        <section id="surveyView" class="view space-y-6">
+            <h2 class="text-xl font-bold px-2" data-i18n="btn_surveys">So'rovnomalar</h2>
+            <div id="surveyList" class="space-y-3"></div>
+        </section>
+
+        <!-- SUCCESS VIEW -->
+        <section id="successView" class="view py-12 text-center">
+            <div
+                class="w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-500 mx-auto mb-8 animate-bounce-in">
+                <i data-lucide="check-circle" class="w-16 h-16"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-4" data-i18n="success_title">Muvaffaqiyatli!</h2>
+            <p class="text-slate-500 mb-10" data-i18n="success_text">Sizning ma'lumotlaringiz muvaffaqiyatli qabul
+                qilindi.</p>
+            <button onclick="showView('homeView')" class="btn-primary w-full max-w-xs mx-auto">
+                <span data-i18n="btn_back_main">Asosiy menyuga qaytish</span>
+            </button>
+        </section>
+
+        <!-- ADMIN DASHBOARD VIEW -->
+        <section id="adminDashboardView" class="view space-y-6">
+            <h2 class="text-xl font-bold px-2">Admin Dashboard</h2>
+
+            <div class="grid grid-cols-3 gap-3">
+                <div class="card p-4 text-center">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase" data-i18n="stats_today">Bugun</p>
+                    <p id="statsToday" class="text-2xl font-black text-primary">0</p>
+                </div>
+                <div class="card p-4 text-center">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase" data-i18n="stats_week">Hafta</p>
+                    <p id="statsWeek" class="text-2xl font-black text-secondary">0</p>
+                </div>
+                <div class="card p-4 text-center">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase" data-i18n="stats_month">Oy</p>
+                    <p id="statsMonth" class="text-2xl font-black text-accent">0</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest pl-2">Boshqaruv</h3>
+                <div class="grid grid-cols-1 gap-3">
+                    <button onclick="showAdminSettings('admins')"
+                        class="card flex items-center gap-4 hover:border-primary transition-all">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                        </div>
+                        <span class="font-semibold" data-i18n="btn_manage_admins">Adminlar</span>
+                    </button>
+                    <button onclick="showAdminSettings('faculties')"
+                        class="card flex items-center gap-4 hover:border-primary transition-all">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-500">
+                            <i data-lucide="university" class="w-5 h-5"></i>
+                        </div>
+                        <span class="font-semibold" data-i18n="btn_manage_faculties">Fakultetlar</span>
+                    </button>
+                    <button onclick="showAdminSettings('directions')"
+                        class="card flex items-center gap-4 hover:border-primary transition-all">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-500">
+                            <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+                        </div>
+                        <span class="font-semibold" data-i18n="btn_manage_directions">Yo'nalishlar</span>
+                    </button>
+                    <button onclick="showAdminSettings('questions')"
+                        class="card flex items-center gap-4 hover:border-primary transition-all">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center text-orange-500">
+                            <i data-lucide="help-circle" class="w-5 h-5"></i>
+                        </div>
+                        <span class="font-semibold" data-i18n="btn_manage_questions">Savollar</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADMIN SETTINGS VIEW -->
+        <section id="adminSettingsView" class="view space-y-6">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-4">
+                    <button onclick="showView('adminDashboardView')"
+                        class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+                    <h2 class="text-xl font-bold" id="settingsTitle">Settings</h2>
+                </div>
+                <button onclick="openAddModal()"
+                    class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30">
+                    <i data-lucide="plus" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div id="settingsList" class="space-y-3"></div>
+        </section>
+
+    </main>
+
+    <!-- Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 glass pb-safe px-6 pt-2 flex items-center justify-between">
+        <button onclick="showView('homeView')" id="navHome" class="nav-item active">
+            <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold uppercase tracking-tighter">Bosh</span>
+        </button>
+        <button onclick="showView('complaintView')" id="navComplaint" class="nav-item">
+            <i data-lucide="message-square" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold uppercase tracking-tighter">Murojaat</span>
+        </button>
+        <button onclick="showView('ratingView')" id="navRating" class="nav-item">
+            <i data-lucide="star" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold uppercase tracking-tighter">Baho</span>
+        </button>
+        <button onclick="showView('rulesView')" id="navRules" class="nav-item">
+            <i data-lucide="book-check" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold uppercase tracking-tighter">Qoidalar</span>
+        </button>
+    </nav>
+
+    <!-- Custom Modal Implementation -->
+    <div id="customModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="absolute bottom-0 left-0 right-0 glass rounded-t-[40px] p-8 max-h-[85vh] overflow-y-auto translate-y-full transition-transform duration-300"
+            id="modalContent">
+            <!-- Dynamic content -->
+        </div>
     </div>
 
     <!-- Scripts -->
-    <script src="js/app.js?v=1.0.1"></script>
+    <script src="js/app.js?v=2.0.0"></script>
+    <script>
+        // Refresh icons after dynamic content changes
+        function refreshIcons() {
+            lucide.createIcons();
+        }
+        window.onload = refreshIcons;
+    </script>
 </body>
 
 </html>
