@@ -590,9 +590,52 @@ body {
 
     .option-btn:hover {
         background: #3a3a3c;
+        cursor: pointer;
     }
 
-    .loading-overlay {
-        background: rgba(28, 28, 30, 0.8);
+    .settings-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
     }
+
+    .settings-item {
+        background: var(--secondary-bg);
+        padding: 16px;
+        border-radius: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .settings-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .action-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+}
+
+/* Closing media query */
+
+/* Header alignment */
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.lang-switcher {
+    position: relative;
+    display: flex;
+    align-items: center;
 }

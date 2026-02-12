@@ -67,6 +67,12 @@ async function fetchConfig() {
         applyTranslations();
         updateCurrentLangUI();
         renderLanguages();
+
+        // Show Admin button if user is admin
+        if (state.config.is_admin) {
+            document.getElementById('adminTabBtn').style.display = 'flex';
+        }
+
         console.log('Config loaded:', state.config);
     } catch (error) {
         console.error('Error fetching config:', error);
@@ -197,6 +203,7 @@ function showView(viewId) {
     if (viewId === 'ratingView') initRatingForm();
     if (viewId === 'rulesView') renderRulesList();
     if (viewId === 'surveyView') renderSurveyList();
+    if (viewId === 'adminDashboardView') loadAdminDashboard();
 
     // Telegram Back Button
     if (tg) {
@@ -652,7 +659,80 @@ function renderSurveyList() {
 }
 
 // ============================================
-// RATING FORM
+// ADMIN LOGIC
+// ============================================
+async function loadAdminDashboard() {
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE}/api/admin/dashboard`);
+        const data = await response.json();
+
+        document.getElementById('statsToday').textContent = data.today || 0;
+        document.getElementById('statsWeek').textContent = data.week || 0;
+        document.getElementById('statsMonth').textContent = data.month || 0;
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function showAdminSettings(type) {
+    state.currentSettingType = type;
+    showView('adminSettingsView');
+
+    const titleEl = document.getElementById('settingsTitle');
+    const titles = {
+        admins: t('btn_manage_admins'),
+        faculties: t('btn_manage_faculties'),
+        directions: t('btn_manage_directions'),
+        questions: t('btn_manage_questions'),
+        translations: t('btn_manage_translations')
+    };
+    titleEl.textContent = titles[type] || type;
+
+    loadSettingsList(type);
+}
+
+async function loadSettingsList(type) {
+    const container = document.getElementById('settingsList');
+    container.innerHTML = '<p>Yuklanmoqda...</p>';
+
+    try {
+        const response = await fetch(`${API_BASE}/api/admin/settings/${type}`);
+        const data = await response.json();
+
+        container.innerHTML = '';
+        data.items?.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'settings-item';
+
+            // Simplified display based on type
+            let name = item[0] || 'Unknown';
+            let detail = item[1] || '';
+
+            if (type === 'admins') { name = item[1] || item[0]; detail = `ID: ${item[0]}`; }
+            if (type === 'questions') { name = t(item[1]); detail = `Type: ${item[2]}`; }
+
+            el.innerHTML = `
+                <div class="settings-info">
+                    <span class="settings-name">${name}</span>
+                    <span class="settings-detail">${detail}</span>
+                </div>
+                <div class="settings-actions">
+                    <button class="action-icon edit-icon"><i class="fas fa-edit"></i></button>
+                    <button class="action-icon delete-icon"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(el);
+        });
+    } catch (error) {
+        container.innerHTML = '<p>Xatolik yuz berdi</p>';
+    }
+}
+
+// ============================================
+// RATING FORM (CORRECTED)
 // ============================================
 function initRatingForm() {
     state.ratingData = {
@@ -662,6 +742,8 @@ function initRatingForm() {
         course: null,
         edu_type: null,
         edu_lang: null,
+        subject_name: '',
+        teacher_name: '',
         ratings: {},
         comment: ''
     };
@@ -678,7 +760,7 @@ function showRatingStep(step) {
 
     // Nav logic
     document.getElementById('ratingBackBtn').style.display = step > 1 ? 'flex' : 'none';
-    document.getElementById('ratingSubmitBtn').style.display = step === 7 ? 'flex' : 'none';
+    document.getElementById('ratingSubmitBtn').style.display = step === 9 ? 'flex' : 'none'; // Step 9 is submit
 }
 
 function renderRatingFacultyButtons() {
@@ -699,8 +781,8 @@ function nextRatingStep() {
 
     // Skip education type/lang for magistratura
     if (faculty === 'magistratura') {
-        if (state.ratingData.step === 2) {
-            showRatingStep(5);
+        if (state.ratingData.step === 2) { // If currently on direction step
+            showRatingStep(5); // Skip to course selection
             renderRatingCourseButtons();
             return;
         }
@@ -710,7 +792,10 @@ function nextRatingStep() {
     else if (next === 3) renderRatingEduTypeButtons();
     else if (next === 4) renderRatingEduLangButtons();
     else if (next === 5) renderRatingCourseButtons();
-    else if (next === 6) renderRatingQuestions();
+    else if (next === 6) renderRatingSubjectStep();
+    else if (next === 7) renderRatingTeacherStep();
+    else if (next === 8) renderRatingQuestions();
+    else if (next === 9) renderRatingCommentStep();
 
     showRatingStep(next);
 }
@@ -752,6 +837,30 @@ async function renderRatingCourseButtons() {
     });
 }
 
+function renderRatingSubjectStep() {
+    const container = getOrCreateRatingStepContainer('ratingStep6', 'enter_subject', 'ratingSubjectInput');
+    container.innerHTML = `
+        <input type="text" id="ratingSubject" class="form-input" placeholder="${t('enter_subject')}" onchange="state.ratingData.subject_name = this.value">
+        <button class="nav-btn primary" onclick="nextRatingStep()">${t('btn_next')}</button>
+    `;
+}
+
+function renderRatingTeacherStep() {
+    const container = getOrCreateRatingStepContainer('ratingStep7', 'enter_teacher', 'ratingTeacherInput');
+    container.innerHTML = `
+        <input type="text" id="ratingTeacher" class="form-input" placeholder="${t('enter_teacher')}" onchange="state.ratingData.teacher_name = this.value">
+        <button class="nav-btn primary" onclick="nextRatingStep()">${t('btn_next')}</button>
+    `;
+}
+
+function renderRatingCommentStep() {
+    // Already in HTML as step 7, but let's make it step 9
+    const step7 = document.getElementById('ratingStep7');
+    if (step7) step7.id = 'ratingStep9'; // Corrected ID to match the new step number
+    // Ensure the content is correct for the comment step, assuming it's pre-existing in HTML
+    // If not, it would need to be created similar to other steps.
+}
+
 function getOrCreateRatingStepContainer(stepId, titleKey, buttonsId) {
     let stepEl = document.getElementById(stepId);
     if (!stepEl) {
@@ -762,7 +871,12 @@ function getOrCreateRatingStepContainer(stepId, titleKey, buttonsId) {
             <label class="form-label" data-i18n="${titleKey}">${t(titleKey)}</label>
             <div id="${buttonsId}" class="button-group"></div>
         `;
-        document.getElementById('ratingForm').insertBefore(stepEl, document.getElementById('ratingQuestionsStep'));
+        // Insert before the comment step, which is now ratingStep9
+        document.getElementById('ratingForm').insertBefore(stepEl, document.getElementById('ratingStep9') || document.getElementById('ratingQuestionsStep'));
+    }
+    // If buttonsId is for an input, return the stepEl itself or the input container
+    if (buttonsId.includes('Input')) {
+        return stepEl;
     }
     return document.getElementById(buttonsId);
 }

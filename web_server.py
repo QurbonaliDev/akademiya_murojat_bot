@@ -326,8 +326,9 @@ async def api_submit_complaint(request):
 async def api_config(request):
     """Barcha konfiguratsiyani birdan olish (optimizatsiya)"""
     lang = request.query.get('lang', 'uz')
+    user_id = request.query.get('user_id')
     
-    return web.json_response({
+    config = {
         'translations': get_translations(lang),
         'faculties': get_faculties_from_db(),
         'education_types': get_education_types_from_db(),
@@ -339,7 +340,57 @@ async def api_config(request):
             'regular': get_courses_from_db('regular'),
             'magistr': get_courses_from_db('magistr')
         }
-    })
+    }
+    
+    if user_id:
+        from utils.utils import is_admin
+        config['is_admin'] = is_admin(int(user_id))
+        
+    return web.json_response(config)
+
+async def api_admin_stats(request):
+    from database import get_statistics
+    stats = get_statistics()
+    return web.json_response(stats)
+
+async def api_admin_dashboard(request):
+    from database import get_statistics
+    stats = get_statistics()
+    # Mocking dashboard fields if they don't exist in get_statistics
+    # Based on handlers/admins/admin.py show_dashboard
+    dashboard_data = {
+        'today': stats.get('today', 0),
+        'week': stats.get('week', 0),
+        'month': stats.get('month', 0),
+        'top_direction': stats.get('top_direction', (None, 0))
+    }
+    return web.json_response(dashboard_data)
+
+async def api_admin_settings_list(request):
+    setting_type = request.match_info.get('type')
+    if setting_type == 'admins':
+        from database_models import get_all_admins
+        return web.json_response({'items': get_all_admins()})
+    elif setting_type == 'faculties':
+        from database_models import get_all_faculties
+        return web.json_response({'items': get_all_faculties()})
+    elif setting_type == 'directions':
+        from database_models import get_all_directions_dict
+        return web.json_response({'items': get_all_directions_dict()})
+    elif setting_type == 'questions':
+        from database_models import get_rating_questions
+        return web.json_response({'items': get_rating_questions()})
+    return web.json_response({'error': 'Invalid type'}, status=400)
+
+async def api_admin_translations_list(request):
+    from database_models import get_all_translations
+    # This function might need to be created if not exists
+    try:
+        from database_models import get_all_translations
+        return web.json_response(get_all_translations())
+    except ImportError:
+        # Fallback if not implemented
+        return web.json_response({'error': 'Not implemented'}, status=501)
 
 
 async def index_handler(request):
@@ -374,6 +425,12 @@ def create_webapp_server():
     app.router.add_get('/api/surveys', api_surveys)
     app.router.add_get('/api/languages', api_languages)
     app.router.add_get('/api/config', api_config)
+    
+    # Admin API routes
+    app.router.add_get('/api/admin/stats', api_admin_stats)
+    app.router.add_get('/api/admin/dashboard', api_admin_dashboard)
+    app.router.add_get('/api/admin/settings/{type}', api_admin_settings_list)
+    app.router.add_get('/api/admin/translations', api_admin_translations_list)
     
     # Root route for index.html
     app.router.add_get('/', index_handler)

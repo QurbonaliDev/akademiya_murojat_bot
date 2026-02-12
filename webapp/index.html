@@ -19,14 +19,17 @@
         <header class="header">
             <div class="header-top">
                 <h1 class="header-title">📚 Akademiya</h1>
-                <div class="header-actions">
-                    <button id="langBtn" class="action-btn" onclick="toggleLangMenu()">
+                <div class="lang-switcher">
+                    <button id="currentLangBtn" onclick="toggleLangMenu()">
                         <span id="currentLang">UZ</span>
+                        <i class="fas fa-chevron-down"></i>
                     </button>
-                    <div id="langMenu" class="lang-menu">
-                        <!-- Languages will be rendered here -->
-                    </div>
+                    <div id="langMenu" class="lang-menu"></div>
                 </div>
+                <button id="adminTabBtn" class="admin-tab-btn" style="display: none;"
+                    onclick="showView('adminDashboardView')">
+                    <i class="fas fa-user-shield"></i>
+                </button>
             </div>
             <p class="header-subtitle" id="headerSubtitle">Murojaat yuborish</p>
         </header>
@@ -163,36 +166,90 @@
 
             <!-- Rating View -->
             <section id="ratingView" class="view">
-                <div id="ratingSteps">
-                    <!-- Rating flow like complaint -->
-                    <div id="ratingForm">
-                        <div id="ratingStep1" class="form-step active">
-                            <!-- Faculty Selection (shared if needed) -->
-                            <label class="form-label" data-i18n="choose_faculty">Fakultetni tanlang</label>
-                            <div id="ratingFacultyButtons" class="button-group"></div>
-                        </div>
-                        <!-- ... other steps added via JS ... -->
-                        <div id="ratingQuestionsStep" class="form-step">
-                            <label class="form-label" data-i18n="btn_lesson_rating">Darsni baholang</label>
-                            <div id="questionContainer" class="question-list"></div>
-                            <div class="form-group" style="margin-top: 16px;">
-                                <label class="form-label" data-i18n="comment_placeholder">Izoh qoldiring
-                                    (ixtiyoriy)</label>
-                                <textarea id="ratingComment" class="form-textarea" rows="3"></textarea>
-                            </div>
-                        </div>
+                <form id="ratingForm" class="rating-form">
+                    <!-- Step 1: Faculty -->
+                    <div id="ratingStep1" class="form-step active">
+                        <label class="form-label" data-i18n="choose_faculty">Fakultetni tanlang</label>
+                        <div id="ratingFacultyButtons" class="button-group"></div>
+                    </div>
+
+                    <!-- Steps 2-5 will be injected by JS -->
+
+                    <!-- Step 6: Questions -->
+                    <div id="ratingQuestionsStep" class="form-step">
+                        <div id="questionContainer"></div>
+                    </div>
+
+                    <!-- Step 7: Comments -->
+                    <div id="ratingStep7" class="form-step">
+                        <label class="form-label" data-i18n="enter_comment">Izoh qoldiring (ixtiyoriy)</label>
+                        <textarea id="ratingComment" class="form-textarea"
+                            placeholder="Dars haqida fikringiz..."></textarea>
+                    </div>
+
+                    <div class="form-nav">
+                        <button type="button" id="ratingBackBtn" class="nav-btn secondary" onclick="prevRatingStep()"
+                            style="display: none;">
+                            <span data-i18n="btn_back">Orqaga</span>
+                        </button>
+                        <button type="button" id="ratingSubmitBtn" class="nav-btn primary" onclick="submitRating()"
+                            style="display: none;">
+                            <span data-i18n="btn_send">Yuborish</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- ADMIN DASHBOARD VIEW -->
+            <section id="adminDashboardView" class="view">
+                <div class="stats-grid">
+                    <div class="stats-card">
+                        <span class="stats-label" data-i18n="stats_today">Bugun</span>
+                        <span id="statsToday" class="stats-value">0</span>
+                    </div>
+                    <div class="stats-card">
+                        <span class="stats-label" data-i18n="stats_week">Hafta</span>
+                        <span id="statsWeek" class="stats-value">0</span>
+                    </div>
+                    <div class="stats-card">
+                        <span class="stats-label" data-i18n="stats_month">Oy</span>
+                        <span id="statsMonth" class="stats-value">0</span>
                     </div>
                 </div>
-                <div class="form-nav">
-                    <button type="button" class="btn btn-secondary" id="ratingBackBtn" onclick="prevRatingStep()"
-                        style="display: none;">
-                        <span data-i18n="btn_back">⬅️ Orqaga</span>
+
+                <div class="admin-menu">
+                    <button class="menu-card glass" onclick="showAdminSettings('admins')">
+                        <i class="fas fa-users-cog"></i>
+                        <span data-i18n="btn_manage_admins">Adminlar</span>
                     </button>
-                    <button type="submit" class="btn btn-success" id="ratingSubmitBtn" onclick="submitRating()"
-                        style="display: none;">
-                        <span data-i18n="btn_submit">✅ Yuborish</span>
+                    <button class="menu-card glass" onclick="showAdminSettings('faculties')">
+                        <i class="fas fa-university"></i>
+                        <span data-i18n="btn_manage_faculties">Fakultetlar</span>
+                    </button>
+                    <button class="menu-card glass" onclick="showAdminSettings('directions')">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span data-i18n="btn_manage_directions">Yo'nalishlar</span>
+                    </button>
+                    <button class="menu-card glass" onclick="showAdminSettings('questions')">
+                        <i class="fas fa-question-circle"></i>
+                        <span data-i18n="btn_manage_questions">Savollar</span>
+                    </button>
+                    <button class="menu-card glass" onclick="showAdminSettings('translations')">
+                        <i class="fas fa-language"></i>
+                        <span data-i18n="btn_manage_translations">Tarjimalar</span>
                     </button>
                 </div>
+            </section>
+
+            <!-- ADMIN SETTINGS VIEW -->
+            <section id="adminSettingsView" class="view">
+                <div class="settings-header">
+                    <h2 id="settingsTitle">Settings</h2>
+                    <button class="add-btn" onclick="openAddModal()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div id="settingsList" class="settings-list"></div>
             </section>
 
             <!-- Success View -->
