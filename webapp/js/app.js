@@ -522,6 +522,29 @@ async function handleRatingSubmit() {
 /**
  * UTILS & HELPERS
  */
+function vibrate(type = 'light') {
+    if (tg?.HapticFeedback) {
+        if (['error', 'success', 'warning'].includes(type)) {
+            tg.HapticFeedback.notificationOccurred(type);
+        } else {
+            tg.HapticFeedback.impactOccurred(type);
+        }
+    }
+}
+
+function fireConfetti() {
+    if (window.confetti) {
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#6366f1', '#a855f7', '#ec4899']
+        });
+    }
+}
+
+window.vibrate = vibrate;
+
 function appendProOption(container, label, icon, onClick) {
     const div = document.createElement('div');
     div.className = 'option-pro group';
@@ -773,6 +796,7 @@ window.handleRatingInput = handleRatingInput;
 window.handleRatingSubmit = handleRatingSubmit;
 window.handleComplaintInput = handleComplaintInput;
 window.handleComplaintSubmit = handleComplaintSubmit;
+window.vibrate = vibrate;
 
 // Boot
 initApp();
