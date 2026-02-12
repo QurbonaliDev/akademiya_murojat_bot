@@ -1,56 +1,51 @@
 /**
- * app.js - Full Premium Logic for Telegram Mini App
- * - Tailwind Design System
- * - 9-step Rating Flow
- * - Admin Dashboard & CRUD
- * - Multi-language Support
+ * app.js - Ultimate Pro Edition
+ * - GSAP Animations
+ * - Telegram Haptic Feedback
+ * - Professional Multi-step Wizards
+ * - Skeleton Loading System
  */
 
 const API_BASE = window.location.origin;
 const tg = window.Telegram?.WebApp;
 
-// Initial State
+// Ultimate State
 const state = {
     lang: 'uz',
     translations: {},
-    config: {}, // Faculties, directions, types, etc.
+    config: {},
     currentView: 'homeView',
-    complaintData: {},
-    ratingData: {
-        step: 1,
-        maxSteps: 9,
-        answers: {}
-    },
-    adminStats: {}
+    isLoaded: false,
+    complaint: { step: 1, answers: {}, history: [] },
+    rating: { step: 1, maxSteps: 9, answers: {}, history: [] }
 };
 
 /**
- * INITIALIZATION
+ * CORE INIT
  */
 async function initApp() {
+    // Configure Telegram
     if (tg) {
         tg.ready();
         tg.expand();
-        // Set theme from Telegram
-        if (tg.colorScheme === 'dark') document.documentElement.classList.add('dark');
-        else document.documentElement.classList.remove('dark');
+        // Theme sync
+        const isDark = tg.colorScheme === 'dark';
+        document.documentElement.classList.toggle('dark', isDark);
     }
 
-    showLoading();
     try {
         await fetchConfig();
         applyTranslations();
-        initNavigation();
-        showView('homeView');
+        hideSkeleton();
+        showView('homeView', false); // Initial view without heavy animation
     } catch (err) {
-        console.error('Initialization failed', err);
-    } finally {
-        hideLoading();
+        console.error('Core init failed', err);
+        tg?.showAlert('Server bilan aloqa uzildi. Iltimos qayta urinib ko\'ring.');
     }
 }
 
 /**
- * CONFIG & DATA FETCHING
+ * DATA ENGINE
  */
 async function fetchConfig() {
     const user_id = tg?.initDataUnsafe?.user?.id || '';
@@ -58,542 +53,444 @@ async function fetchConfig() {
     state.config = await response.json();
     state.translations = state.config.translations || {};
 
-    // Check Admin Status
     if (state.config.is_admin) {
         document.getElementById('adminTabBtn')?.classList.remove('hidden');
     }
 }
 
-/**
- * TRANSLATIONS & L10N
- */
 function t(key) {
     return state.translations[key] || key;
 }
 
-function applyTranslations() {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        el.textContent = t(key);
-    });
-
-    // Update labels and placeholders
-    document.getElementById('currentLang').textContent = state.lang.toUpperCase();
-    document.getElementById('headerTitle').textContent = t('header_title') || 'Akademiya';
-}
-
-async function changeLanguage(newLang) {
-    state.lang = newLang;
-    showLoading();
-    await fetchConfig();
-    applyTranslations();
-    toggleLangMenu(); // Close menu
-    hideLoading();
-}
-
-function renderLanguages() {
-    const menu = document.getElementById('langMenu');
-    const langs = { uz: 'O\'zbekcha', ru: 'Русский', en: 'English' };
-    menu.innerHTML = Object.entries(langs).map(([code, name]) => `
-        <button onclick="changeLanguage('${code}')" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-            ${name}
-        </button>
-    `).join('');
-}
-
-function toggleLangMenu() {
-    const menu = document.getElementById('langMenu');
-    menu.classList.toggle('hidden');
-    if (!menu.classList.contains('hidden')) renderLanguages();
-}
-
 /**
- * VIEW MANAGEMENT
+ * ULTIMATE ANIMATION ENGINE (GSAP)
  */
-function showView(viewId) {
-    // Hide all
+function showView(viewId, animate = true) {
+    if (state.currentView === viewId && state.isLoaded) return;
+
+    const oldView = document.getElementById(state.currentView);
+    const newView = document.getElementById(viewId);
+
+    if (!newView) return;
+
+    // Reset view visibility
     document.querySelectorAll('.view').forEach(v => {
-        v.classList.remove('active');
-        v.classList.add('hidden');
+        if (v.id !== viewId && v.id !== state.currentView) {
+            v.style.display = 'none';
+            v.style.opacity = '0';
+        }
     });
 
-    // Show target
-    const target = document.getElementById(viewId);
-    if (target) {
-        target.classList.remove('hidden');
-        setTimeout(() => target.classList.add('active'), 50);
+    if (animate && oldView) {
+        gsap.to(oldView, {
+            opacity: 0,
+            y: -20,
+            duration: 0.3,
+            ease: "power2.in",
+            onComplete: () => {
+                oldView.style.display = 'none';
+                newView.style.display = 'block';
+                gsap.fromTo(newView,
+                    { opacity: 0, y: 30 },
+                    { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
+                );
+            }
+        });
+    } else {
+        if (oldView) oldView.style.display = 'none';
+        newView.style.display = 'block';
+        newView.style.opacity = '1';
     }
 
     state.currentView = viewId;
+    state.isLoaded = true;
 
-    // Update Navigation Active State
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    const navMap = { homeView: 'navHome', complaintView: 'navComplaint', ratingView: 'navRating', rulesView: 'navRules' };
-    if (navMap[viewId]) document.getElementById(navMap[viewId])?.classList.add('active');
+    // Update Navbar
+    updateNavbar(viewId);
 
-    // View specific initializers
-    if (viewId === 'complaintView') initComplaintFlow();
-    if (viewId === 'ratingView') initRatingFlow();
-    if (viewId === 'rulesView') renderRules();
-    if (viewId === 'surveyView') renderSurveys();
-    if (viewId === 'adminDashboardView') loadAdminDashboard();
+    // Auto-initializers
+    if (viewId === 'complaintView') initComplaintWizard();
+    if (viewId === 'ratingView') initRatingWizard();
+    if (viewId === 'rulesView') renderRulesList();
+    if (viewId === 'surveyView') renderSurveyList();
+    if (viewId === 'adminDashboardView') fetchAdminDashboard();
 
-    // Scroll to top
-    window.scrollTo(0, 0);
-
-    // Lucide
+    window.scrollTo({ top: 0, behavior: animate ? 'smooth' : 'auto' });
     if (window.lucide) window.lucide.createIcons();
 }
 
 /**
- * COMPLAINT FLOW
+ * COMPLAINT WIZARD
  */
-function initComplaintFlow() {
-    state.complaintData = { step: 1, answers: {} };
+function initComplaintWizard() {
+    state.complaint = { step: 1, answers: {}, history: [] };
     renderComplaintStep(1);
 }
 
 function renderComplaintStep(step) {
-    state.complaintData.step = step;
     const container = document.getElementById('complaintStepContainer');
-    container.innerHTML = '';
+
+    // Create new step element for transition
+    const stepEl = document.createElement('div');
+    stepEl.className = 'space-y-6 step-content';
 
     switch (step) {
         case 1: // Faculty
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_faculty')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
-            state.config.faculties?.forEach(f => appendComplaintOption(t(f.translation_key), 'university', () => {
-                state.complaintData.answers.faculty = f.code;
-                renderComplaintStep(2);
-            }));
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_faculty')}</h3><div class="space-y-4" id="cOptions"></div>`;
+            state.config.faculties?.forEach(f => {
+                appendProOption(stepEl.querySelector('#cOptions'), t(f.translation_key), 'university', () => {
+                    saveAndNextComplaint('faculty', f.code, 2);
+                });
+            });
             break;
         case 2: // Direction
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_direction')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
-            const directions = state.config.directions?.filter(d => d.faculty_code === state.complaintData.answers.faculty) || [];
-            directions.forEach(d => appendComplaintOption(t(d.translation_key), 'graduation-cap', () => {
-                state.complaintData.answers.direction = d.code;
-                if (state.complaintData.answers.faculty === 'magistratura') renderComplaintStep(5);
-                else renderComplaintStep(3);
-            }));
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_direction')}</h3><div class="space-y-4" id="cOptions"></div>`;
+            const directions = state.config.directions?.filter(d => d.faculty_code === state.complaint.answers.faculty) || [];
+            directions.forEach(d => {
+                appendProOption(stepEl.querySelector('#cOptions'), t(d.translation_key), 'graduation-cap', () => {
+                    saveAndNextComplaint('direction', d.code, state.complaint.answers.faculty === 'magistratura' ? 5 : 3);
+                });
+            });
             break;
         case 3: // Edu Type
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_edu_type')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
-            state.config.education_types?.forEach(et => appendComplaintOption(t(et.translation_key), 'book-open', () => {
-                state.complaintData.answers.edu_type = et.code;
-                renderComplaintStep(4);
-            }));
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_edu_type')}</h3><div class="space-y-4" id="cOptions"></div>`;
+            state.config.education_types?.forEach(et => {
+                appendProOption(stepEl.querySelector('#cOptions'), t(et.translation_key), 'book-open', () => {
+                    saveAndNextComplaint('education_type', et.code, 4);
+                });
+            });
             break;
         case 4: // Edu Lang
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_edu_lang')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
-            state.config.education_languages?.forEach(el => appendComplaintOption(t(el.translation_key), 'languages', () => {
-                state.complaintData.answers.edu_lang = el.code;
-                renderComplaintStep(5);
-            }));
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_edu_lang')}</h3><div class="space-y-4" id="cOptions"></div>`;
+            state.config.education_languages?.forEach(el => {
+                appendProOption(stepEl.querySelector('#cOptions'), t(el.translation_key), 'languages', () => {
+                    saveAndNextComplaint('education_language', el.code, 5);
+                });
+            });
             break;
         case 5: // Course
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_course')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
-            const type = state.complaintData.answers.faculty === 'magistratura' ? 'magistr' : 'regular';
-            state.config.courses?.[type]?.forEach(c => appendComplaintOption(t(c.translation_key), 'hash', () => {
-                state.complaintData.answers.course = c.code;
-                renderComplaintStep(6);
-            }));
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_course')}</h3><div class="space-y-4" id="cOptions"></div>`;
+            const type = state.complaint.answers.faculty === 'magistratura' ? 'magistr' : 'regular';
+            state.config.courses?.[type]?.forEach(c => {
+                appendProOption(stepEl.querySelector('#cOptions'), t(c.translation_key), 'hash', () => {
+                    saveAndNextComplaint('course', c.code, 6);
+                });
+            });
             break;
         case 6: // Complaint Type
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_complaint_type')}</h3><div class="space-y-3" id="complaintStepContent"></div>`;
-            state.config.complaint_types?.forEach(ct => appendComplaintOption(t(ct.translation_key), 'info', () => {
-                state.complaintData.answers.type = ct.code;
-                state.complaintData.currentTypeInfo = ct;
-                if (ct.requires_subject) renderComplaintStep(7);
-                else if (ct.requires_teacher) renderComplaintStep(8);
-                else renderComplaintStep(9);
-            }));
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_complaint_type')}</h3><div class="space-y-4" id="cOptions"></div>`;
+            state.config.complaint_types?.forEach(ct => {
+                appendProOption(stepEl.querySelector('#cOptions'), t(ct.translation_key), 'info', () => {
+                    state.complaint.currentType = ct;
+                    saveAndNextComplaint('complaint_type', ct.code, ct.requires_subject ? 7 : (ct.requires_teacher ? 8 : 9));
+                });
+            });
             break;
         case 7: // Subject
-            container.innerHTML = `
-                <h3 class="text-lg font-bold mb-4">${t('enter_subject')}</h3>
-                <input type="text" id="compSubject" class="input-field mb-6" placeholder="${t('subject_placeholder')}">
-                <button onclick="saveComplaintInput('subject', 'compSubject')" class="btn-primary w-full">${t('btn_next')}</button>
+            stepEl.innerHTML = `
+                <h3 class="text-xl font-bold mb-6">${t('enter_subject')}</h3>
+                <input type="text" id="cInput" class="input-pro mb-8" placeholder="${t('subject_placeholder')}">
+                <button onclick="handleComplaintInput('subject_name', 7)" class="btn-pro w-full">${t('btn_next')}</button>
             `;
             break;
         case 8: // Teacher
-            container.innerHTML = `
-                <h3 class="text-lg font-bold mb-4">${t('enter_teacher')}</h3>
-                <input type="text" id="compTeacher" class="input-field mb-6" placeholder="${t('teacher_placeholder')}">
-                <button onclick="saveComplaintInput('teacher', 'compTeacher')" class="btn-primary w-full">${t('btn_next')}</button>
+            stepEl.innerHTML = `
+                <h3 class="text-xl font-bold mb-6">${t('enter_teacher')}</h3>
+                <input type="text" id="cInput" class="input-pro mb-8" placeholder="${t('teacher_placeholder')}">
+                <button onclick="handleComplaintInput('teacher_name', 8)" class="btn-pro w-full">${t('btn_next')}</button>
             `;
             break;
         case 9: // Message
-            container.innerHTML = `
-                <h3 class="text-lg font-bold mb-4">${t('enter_message')}</h3>
-                <textarea id="compMessage" class="input-field h-40 mb-6" placeholder="${t('message_placeholder')}"></textarea>
-                <button onclick="submitComplaint()" class="btn-primary w-full">
-                    <i data-lucide="send" class="w-5 h-5"></i>
-                    ${t('btn_send')}
-                </button>
-            `;
-            break;
-    }
-    if (window.lucide) window.lucide.createIcons();
-}
-
-function appendComplaintOption(label, icon, onClick) {
-    const el = createOptionCard(label, icon, onClick);
-    document.getElementById('complaintStepContent').appendChild(el);
-}
-
-function saveComplaintInput(key, inputId) {
-    const val = document.getElementById(inputId).value;
-    if (!val) return tg?.showAlert(t('error_fill_field'));
-    state.complaintData.answers[key] = val;
-
-    const info = state.complaintData.currentTypeInfo;
-    if (key === 'subject' && info.requires_teacher) renderComplaintStep(8);
-    else renderComplaintStep(9);
-}
-
-async function submitComplaint() {
-    const message = document.getElementById('compMessage').value;
-    state.complaintData.answers.message = message;
-
-    // Map internal keys to backend keys
-    const payload = {
-        user_id: tg?.initDataUnsafe?.user?.id || 'web_user',
-        faculty: state.complaintData.answers.faculty,
-        direction: state.complaintData.answers.direction,
-        course: state.complaintData.answers.course,
-        education_type: state.complaintData.answers.edu_type,
-        education_language: state.complaintData.answers.edu_lang,
-        complaint_type: state.complaintData.answers.type,
-        subject_name: state.complaintData.answers.subject,
-        teacher_name: state.complaintData.answers.teacher,
-        message: state.complaintData.answers.message
-    };
-
-    showLoading();
-    try {
-        const response = await fetch(`${API_BASE}/api/complaint`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (response.ok) showView('successView');
-        else throw new Error('Submission failed');
-    } catch (err) {
-        tg?.showAlert(t('error_unknown'));
-    } finally {
-        hideLoading();
-    }
-}
-
-window.saveComplaintInput = saveComplaintInput;
-window.submitComplaint = submitComplaint;
-
-/**
- * RATING FLOW (9 STEPS)
- */
-function initRatingFlow() {
-    state.ratingData = { step: 1, maxSteps: 9, answers: {} };
-    renderRatingStep(1);
-}
-
-function updateRatingProgress() {
-    const progress = (state.ratingData.step / state.ratingData.maxSteps) * 100;
-    document.getElementById('ratingProgressBar').style.width = `${progress}%`;
-}
-
-function renderRatingStep(step) {
-    state.ratingData.step = step;
-    updateRatingProgress();
-    const container = document.getElementById('ratingStepContainer');
-    container.innerHTML = '';
-
-    switch (step) {
-        case 1: // Faculty
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_faculty')}</h3><div class="space-y-3" id="stepContent"></div>`;
-            state.config.faculties?.forEach(item => {
-                appendOption(t(item.translation_key), () => {
-                    state.ratingData.answers.faculty = item.code;
-                    renderRatingStep(2);
-                }, 'university');
-            });
-            break;
-        case 2: // Direction
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_direction')}</h3><div class="space-y-3" id="stepContent"></div>`;
-            const directions = state.config.directions?.filter(d => d.faculty_code === state.ratingData.answers.faculty) || [];
-            directions.forEach(item => {
-                appendOption(t(item.translation_key), () => {
-                    state.ratingData.answers.direction = item.code;
-                    // Skip edu_type for magistratura
-                    if (state.ratingData.answers.faculty === 'magistratura') renderRatingStep(5);
-                    else renderRatingStep(3);
-                }, 'graduation-cap');
-            });
-            break;
-        case 3: // Edu Type
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_edu_type')}</h3><div class="space-y-3" id="stepContent"></div>`;
-            state.config.education_types?.forEach(item => {
-                appendOption(t(item.translation_key), () => {
-                    state.ratingData.answers.edu_type = item.code;
-                    renderRatingStep(4);
-                }, 'book-open');
-            });
-            break;
-        case 4: // Edu Lang
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_edu_lang')}</h3><div class="space-y-3" id="stepContent"></div>`;
-            state.config.education_languages?.forEach(item => {
-                appendOption(t(item.translation_key), () => {
-                    state.ratingData.answers.edu_lang = item.code;
-                    renderRatingStep(5);
-                }, 'languages');
-            });
-            break;
-        case 5: // Course
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('choose_course')}</h3><div class="space-y-3" id="stepContent"></div>`;
-            const courseType = state.ratingData.answers.faculty === 'magistratura' ? 'magistr' : 'regular';
-            state.config.courses?.[courseType]?.forEach(item => {
-                appendOption(t(item.translation_key), () => {
-                    state.ratingData.answers.course = item.code;
-                    renderRatingStep(6);
-                }, 'hash');
-            });
-            break;
-        case 6: // Subject Name
-            container.innerHTML = `
-                <h3 class="text-lg font-bold mb-4">${t('enter_subject')}</h3>
-                <input type="text" id="subjectInput" class="input-field mb-6" placeholder="${t('subject_placeholder') || 'Fan nomi...'}">
-                <button onclick="saveRatingInput('subject_name', 'subjectInput', 7)" class="btn-primary w-full">${t('btn_next')}</button>
-            `;
-            break;
-        case 7: // Teacher Name
-            container.innerHTML = `
-                <h3 class="text-lg font-bold mb-4">${t('enter_teacher')}</h3>
-                <input type="text" id="teacherInput" class="input-field mb-6" placeholder="${t('teacher_placeholder') || 'O\'qituvchi ismi...'}">
-                <button onclick="saveRatingInput('teacher_name', 'teacherInput', 8)" class="btn-primary w-full">${t('btn_next')}</button>
-            `;
-            break;
-        case 8: // Rating Questions
-            container.innerHTML = `<h3 class="text-lg font-bold mb-4">${t('btn_lesson_rating')}</h3><div class="space-y-6" id="questionsList"></div>`;
-            renderRatingQuestions();
-            break;
-        case 9: // Final Comment
-            container.innerHTML = `
-                <h3 class="text-lg font-bold mb-4">${t('enter_comment')}</h3>
-                <textarea id="ratingComment" class="input-field h-40 mb-6" placeholder="${t('comment_placeholder') || 'Batafsil fikringiz...'}"></textarea>
-                <button onclick="submitRating()" class="btn-primary w-full bg-green-500 hover:bg-green-600">
-                    <i data-lucide="send" class="w-5 h-5"></i>
+            stepEl.innerHTML = `
+                <h3 class="text-xl font-bold mb-6">${t('enter_message')}</h3>
+                <textarea id="cInput" class="input-pro h-48 mb-8 resize-none" placeholder="${t('message_placeholder')}"></textarea>
+                <button onclick="handleComplaintSubmit()" class="btn-pro w-full">
+                    <i data-lucide="send" class="w-6 h-6"></i>
                     ${t('btn_send')}
                 </button>
             `;
             break;
     }
 
-    if (window.lucide) window.lucide.createIcons();
-}
-
-function saveRatingInput(key, inputId, nextStep) {
-    const val = document.getElementById(inputId).value;
-    if (!val) return tg?.showAlert(t('error_fill_field'));
-    state.ratingData.answers[key] = val;
-    renderRatingStep(nextStep);
-}
-
-function renderRatingQuestions() {
-    const container = document.getElementById('questionsList');
-    state.config.rating_questions?.forEach(q => {
-        const qEl = document.createElement('div');
-        qEl.className = 'space-y-3';
-        qEl.innerHTML = `<p class="font-semibold text-sm">${t(q.translation_key)}</p>`;
-
-        const opts = document.createElement('div');
-        opts.className = 'grid grid-cols-5 gap-2';
-
-        if (q.answer_type === 'scale') {
-            for (let i = 1; i <= 5; i++) {
-                const btn = document.createElement('button');
-                btn.className = 'h-12 rounded-xl bg-slate-100 dark:bg-slate-800 font-bold active:bg-primary active:text-white transition-all';
-                btn.textContent = i;
-                btn.onclick = () => {
-                    state.ratingData.answers[`q${q.question_number}`] = i;
-                    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.replace('bg-primary', 'bg-slate-100'));
-                    btn.classList.add('bg-primary', 'text-white');
-                    checkRatingCompletion();
-                };
-                opts.appendChild(btn);
+    // Slide Animation
+    const currentStep = container.querySelector('.step-content');
+    if (currentStep) {
+        gsap.to(currentStep, {
+            opacity: 0,
+            x: -20,
+            duration: 0.3,
+            onComplete: () => {
+                container.innerHTML = '';
+                container.appendChild(stepEl);
+                gsap.fromTo(stepEl, { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.4 });
+                if (window.lucide) window.lucide.createIcons();
             }
-        } else {
-            // Yes/No logic...
-        }
-        qEl.appendChild(opts);
-        container.appendChild(qEl);
-    });
-
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'btn-primary w-full mt-8';
-    nextBtn.textContent = t('btn_next');
-    nextBtn.onclick = () => renderRatingStep(9);
-    container.appendChild(nextBtn);
+        });
+    } else {
+        container.appendChild(stepEl);
+        gsap.fromTo(stepEl, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4 });
+        if (window.lucide) window.lucide.createIcons();
+    }
 }
 
-function checkRatingCompletion() {
-    // Check if all questions answered if needed
+function saveAndNextComplaint(key, val, next) {
+    vibrate('light');
+    state.complaint.answers[key] = val;
+    state.complaint.history.push(state.complaint.step);
+    renderComplaintStep(next);
 }
 
-async function submitRating() {
-    const comment = document.getElementById('ratingComment').value;
-    state.ratingData.answers.comment = comment;
+function handleComplaintInput(key, currentStep) {
+    const input = document.getElementById('cInput');
+    const val = input.value.trim();
+    if (!val) { vibrate('error'); return tg?.showAlert(t('error_fill_field')); }
 
-    showLoading();
+    state.complaint.answers[key] = val;
+    const info = state.complaint.currentType;
+    let next = 9;
+    if (key === 'subject_name' && info.requires_teacher) next = 8;
+
+    vibrate('light');
+    renderComplaintStep(next);
+}
+
+async function handleComplaintSubmit() {
+    const val = document.getElementById('cInput').value.trim();
+    if (!val) { vibrate('error'); return tg?.showAlert(t('error_fill_field')); }
+    state.complaint.answers.message = val;
+
+    vibrate('medium');
+    showOverlayLoading();
+
     try {
-        const response = await fetch(`${API_BASE}/api/rating`, {
+        const resp = await fetch(`${API_BASE}/api/complaint`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: tg?.initDataUnsafe?.user?.id || 'web_user',
-                ...state.ratingData.answers
+                ...state.complaint.answers
             })
         });
 
-        if (response.ok) showView('successView');
-        else throw new Error('Rating submission failed');
-    } catch (err) {
+        if (resp.ok) {
+            fireConfetti();
+            vibrate('success');
+            showView('successView');
+        } else throw new Error();
+    } catch {
+        vibrate('error');
         tg?.showAlert(t('error_unknown'));
     } finally {
-        hideLoading();
+        hideOverlayLoading();
     }
 }
 
 /**
- * ADMIN FUNCTIONS
+ * RATING WIZARD (STRICT 9 STEPS)
  */
-async function loadAdminDashboard() {
-    showLoading();
-    try {
-        const resp = await fetch(`${API_BASE}/api/admin/dashboard`);
-        const stats = await resp.json();
-        document.getElementById('statsToday').textContent = stats.today || 0;
-        document.getElementById('statsWeek').textContent = stats.week || 0;
-        document.getElementById('statsMonth').textContent = stats.month || 0;
-    } catch (err) {
-        console.error('Admin dashboard failed', err);
-    } finally {
-        hideLoading();
+function initRatingWizard() {
+    state.rating = { step: 1, maxSteps: 9, answers: {}, history: [] };
+    renderRatingStep(1);
+}
+
+function renderRatingStep(step) {
+    state.rating.step = step;
+    updateRatingProgress();
+
+    const container = document.getElementById('ratingStepContainer');
+    const stepEl = document.createElement('div');
+    stepEl.className = 'space-y-6 step-content';
+
+    switch (step) {
+        case 1: // Faculty
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_faculty')}</h3><div class="space-y-4" id="rOptions"></div>`;
+            state.config.faculties?.forEach(f => appendProOption(stepEl.querySelector('#rOptions'), t(f.translation_key), 'university', () => saveAndNextRating('faculty', f.code, 2)));
+            break;
+        case 2: // Direction
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_direction')}</h3><div class="space-y-4" id="rOptions"></div>`;
+            const directions = state.config.directions?.filter(d => d.faculty_code === state.rating.answers.faculty) || [];
+            directions.forEach(d => appendProOption(stepEl.querySelector('#rOptions'), t(d.translation_key), 'graduation-cap', () => saveAndNextRating('direction', d.code, state.rating.answers.faculty === 'magistratura' ? 5 : 3)));
+            break;
+        case 3: // Edu Type
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_edu_type')}</h3><div class="space-y-4" id="rOptions"></div>`;
+            state.config.education_types?.forEach(et => appendProOption(stepEl.querySelector('#rOptions'), t(et.translation_key), 'book-open', () => saveAndNextRating('education_type', et.code, 4)));
+            break;
+        case 4: // Edu Lang
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_edu_lang')}</h3><div class="space-y-4" id="rOptions"></div>`;
+            state.config.education_languages?.forEach(el => appendProOption(stepEl.querySelector('#rOptions'), t(el.translation_key), 'languages', () => saveAndNextRating('education_language', el.code, 5)));
+            break;
+        case 5: // Course
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_course')}</h3><div class="space-y-4" id="rOptions"></div>`;
+            const type = state.rating.answers.faculty === 'magistratura' ? 'magistr' : 'regular';
+            state.config.courses?.[type]?.forEach(c => appendProOption(stepEl.querySelector('#rOptions'), t(c.translation_key), 'hash', () => saveAndNextRating('course', c.code, 6)));
+            break;
+        case 6: // Subject
+            stepEl.innerHTML = `
+                <h3 class="text-xl font-bold mb-6">${t('enter_subject')}</h3>
+                <input type="text" id="rInput" class="input-pro mb-8" placeholder="${t('subject_placeholder')}">
+                <button onclick="handleRatingInput('subject_name', 7)" class="btn-pro w-full">${t('btn_next')}</button>
+            `;
+            break;
+        case 7: // Teacher
+            stepEl.innerHTML = `
+                <h3 class="text-xl font-bold mb-6">${t('enter_teacher')}</h3>
+                <input type="text" id="rInput" class="input-pro mb-8" placeholder="${t('teacher_placeholder')}">
+                <button onclick="handleRatingInput('teacher_name', 8)" class="btn-pro w-full">${t('btn_next')}</button>
+            `;
+            break;
+        case 8: // Questions
+            stepEl.innerHTML = `<h3 class="text-xl font-bold mb-8">${t('btn_lesson_rating')}</h3><div class="space-y-10" id="qList"></div>`;
+            renderRatingQuestions(stepEl.querySelector('#qList'));
+            break;
+        case 9: // Comment
+            stepEl.innerHTML = `
+                <h3 class="text-xl font-bold mb-6">${t('enter_comment')}</h3>
+                <textarea id="rInput" class="input-pro h-48 mb-8 resize-none" placeholder="${t('comment_placeholder')}"></textarea>
+                <button onclick="handleRatingSubmit()" class="btn-pro w-full">
+                    <i data-lucide="send" class="w-6 h-6"></i>
+                    ${t('btn_send')}
+                </button>
+            `;
+            break;
+    }
+
+    const wrapper = container;
+    const current = wrapper.querySelector('.step-content');
+    if (current) {
+        gsap.to(current, {
+            opacity: 0, x: -30, duration: 0.3, onComplete: () => {
+                wrapper.innerHTML = '';
+                wrapper.appendChild(stepEl);
+                gsap.fromTo(stepEl, { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.4 });
+                if (window.lucide) window.lucide.createIcons();
+            }
+        });
+    } else {
+        wrapper.innerHTML = '';
+        wrapper.appendChild(stepEl);
+        gsap.fromTo(stepEl, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 });
+        if (window.lucide) window.lucide.createIcons();
     }
 }
 
-async function showAdminSettings(type) {
-    state.currentSettingType = type;
-    showView('adminSettingsView');
-    document.getElementById('settingsTitle').textContent = t(`btn_manage_${type}`);
-    loadSettingsList(type);
+function updateRatingProgress() {
+    const step = state.rating.step;
+    const max = state.rating.maxSteps;
+    const percent = Math.round((step / max) * 100);
+
+    document.getElementById('ratingStepInfo').textContent = `Step ${step} of ${max}`;
+    document.getElementById('ratingPercentLabel').textContent = `${percent}%`;
+
+    gsap.to('#ratingProgressBar', { width: `${percent}%`, duration: 0.8, ease: "power2.out" });
+
+    // Circle progress
+    const circle = document.getElementById('ratingCircleProgress');
+    const radius = 20;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (percent / 100) * circumference;
+    gsap.to(circle, { strokeDashoffset: offset, duration: 1, ease: "power2.inOut" });
 }
 
-async function loadSettingsList(type) {
-    const container = document.getElementById('settingsList');
-    container.innerHTML = '<div class="py-10 text-center text-slate-400">Loading settings...</div>';
+function saveAndNextRating(key, val, next) {
+    vibrate('light');
+    state.rating.answers[key] = val;
+    renderRatingStep(next);
+}
+
+function handleRatingInput(key, next) {
+    const val = document.getElementById('rInput').value.trim();
+    if (!val) { vibrate('error'); return tg?.showAlert(t('error_fill_field')); }
+    state.rating.answers[key] = val;
+    vibrate('light');
+    renderRatingStep(next);
+}
+
+function renderRatingQuestions(container) {
+    state.config.rating_questions?.forEach(q => {
+        const qDiv = document.createElement('div');
+        qDiv.className = 'space-y-4';
+        qDiv.innerHTML = `<p class="font-bold text-sm text-slate-500 uppercase tracking-widest">${t(q.translation_key)}</p>`;
+
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-5 gap-3';
+
+        for (let i = 1; i <= 5; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'h-14 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 font-black text-lg transition-all active:scale-90';
+            btn.textContent = i;
+            if (state.rating.answers[`q${q.number}`] === i) btn.classList.add('bg-primary', 'text-white', 'border-primary', 'shadow-lg', 'shadow-primary/30');
+
+            btn.onclick = () => {
+                vibrate('light');
+                state.rating.answers[`q${q.number}`] = i;
+                grid.querySelectorAll('button').forEach(b => b.className = 'h-14 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 font-black text-lg transition-all active:scale-90');
+                btn.className = 'h-14 rounded-2xl bg-primary text-white border-primary shadow-lg shadow-primary/30 font-black text-lg scale-105';
+            };
+            grid.appendChild(btn);
+        }
+        qDiv.appendChild(grid);
+        container.appendChild(qDiv);
+    });
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn-pro w-full mt-10';
+    nextBtn.textContent = t('btn_next');
+    nextBtn.onclick = () => { vibrate('medium'); renderRatingStep(9); };
+    container.appendChild(nextBtn);
+}
+
+async function handleRatingSubmit() {
+    const val = document.getElementById('rInput').value.trim();
+    if (!val) { vibrate('error'); return tg?.showAlert(t('error_fill_field')); }
+    state.rating.answers.comment = val;
+
+    vibrate('medium');
+    showOverlayLoading();
 
     try {
-        const resp = await fetch(`${API_BASE}/api/admin/settings/${type}`);
-        const data = await resp.json();
-        container.innerHTML = '';
-
-        data.items?.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'card flex items-center justify-between p-4';
-
-            // Format display label
-            let label = item[1] || item[0];
-            if (type === 'questions') label = t(item[1]);
-
-            card.innerHTML = `
-                <div>
-                    <p class="font-bold text-sm text-slate-800 dark:text-slate-200">${label}</p>
-                    <p class="text-[10px] text-slate-400 dark:text-slate-500 font-mono italic">${item[0]}</p>
-                </div>
-                <div class="flex gap-2">
-                    <button class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-500 flex items-center justify-center active:scale-90 transition-all">
-                        <i data-lucide="edit-3" class="w-4 h-4"></i>
-                    </button>
-                    <button onclick="deleteSettingItem('${type}', '${item[0]}')" class="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-500 flex items-center justify-center active:scale-90 transition-all">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            `;
-            container.appendChild(card);
+        const resp = await fetch(`${API_BASE}/api/rating`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: tg?.initDataUnsafe?.user?.id || 'web_user',
+                ...state.rating.answers
+            })
         });
 
-        if (!data.items?.length) {
-            container.innerHTML = '<div class="py-10 text-center text-slate-400 italic">Ma\'lumot topilmadi</div>';
-        }
-
-        if (window.lucide) window.lucide.createIcons();
-    } catch (err) {
-        container.innerHTML = '<div class="py-10 text-center text-red-400">Error loading settings</div>';
-    }
-}
-
-function openAddModal() {
-    const type = state.currentSettingType;
-    const content = document.getElementById('modalContent');
-    content.innerHTML = `
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-bold">${t('btn_add_new')}</h2>
-            <button onclick="closeModal()" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-        </div>
-        <div class="space-y-4">
-            <input type="text" id="addInput1" class="input-field" placeholder="ID / Code">
-            <input type="text" id="addInput2" class="input-field" placeholder="Name / Title">
-            <button onclick="saveNewSetting()" class="btn-primary w-full mt-4">Save</button>
-        </div>
-    `;
-    openModal();
-}
-
-async function saveNewSetting() {
-    // Basic Add logic (Simplified)
-    tg?.showAlert('Bu qism tez orada bot yordamida yakunlanadi (Backend check)');
-    closeModal();
-}
-
-async function deleteSettingItem(type, id) {
-    if (!confirm(t('confirm_delete') || 'O\'chirshni tasdiqlaysizmi?')) return;
-    showLoading();
-    try {
-        const resp = await fetch(`${API_BASE}/api/admin/settings/${type}/${id}`, { method: 'DELETE' });
-        if (resp.ok) loadSettingsList(type);
-        else throw new Error('Delete failed');
-    } catch (err) {
+        if (resp.ok) {
+            fireConfetti();
+            vibrate('success');
+            showView('successView');
+        } else throw new Error();
+    } catch {
+        vibrate('error');
         tg?.showAlert(t('error_unknown'));
     } finally {
-        hideLoading();
+        hideOverlayLoading();
     }
 }
 
-window.openAddModal = openAddModal;
-window.saveNewSetting = saveNewSetting;
-window.deleteSettingItem = deleteSettingItem;
-
 /**
- * HELPERS
+ * UTILS & HELPERS
  */
-function createOptionCard(label, iconName, onClick) {
+function appendProOption(container, label, icon, onClick) {
     const div = document.createElement('div');
-    div.className = 'card flex items-center gap-4 hover:border-primary cursor-pointer active:scale-95 transition-all';
+    div.className = 'option-pro group';
     div.onclick = onClick;
     div.innerHTML = `
-        <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
-            <i data-lucide="${iconName}" class="w-5 h-5"></i>
+        <div class="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-white/10 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
+            <i data-lucide="${icon}" class="w-6 h-6"></i>
         </div>
-        <span class="font-semibold">${label}</span>
+        <span class="font-extrabold text-slate-700 dark:text-slate-200 group-hover:translate-x-1 transition-transform">${label}</span>
     `;
-    return div;
+    container.appendChild(div);
+    if (window.lucide) window.lucide.createIcons();
 }
 
 /**
  * RULES & SURVEYS
  */
-function renderRules() {
+function renderRulesList() {
     const container = document.getElementById('rulesList');
     container.innerHTML = '';
     const rules = [
@@ -603,83 +500,230 @@ function renderRules() {
     ];
 
     rules.forEach(rule => {
-        const card = createOptionCard(t(rule.title), rule.icon, () => openRuleDetail(rule.id));
-        container.appendChild(card);
+        appendProOption(container, t(rule.title), rule.icon, () => openRuleDetail(rule.id));
     });
 }
 
-function openRuleDetail(ruleId) {
+function openRuleDetail(id) {
+    vibrate('medium');
     const content = document.getElementById('modalContent');
-    const text = t(`rules_${ruleId}_content`) || 'Tez orada...';
+    const text = t(`rules_${id}_content`) || 'Yaqinda qo\'shiladi...';
+
     content.innerHTML = `
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-bold">${t(`btn_rules_${ruleId}`)}</h2>
-            <button onclick="closeModal()" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                <i data-lucide="x" class="w-5 h-5"></i>
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-2xl font-black">${t(`btn_rules_${id}`)}</h2>
+            <button onclick="closeModal()" class="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-center">
+                <i data-lucide="x" class="w-6 h-6"></i>
             </button>
         </div>
-        <div class="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-400">
-            ${text.replace(/\n/g, '<br>')}
+        <div class="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 font-medium leading-[1.8]">
+            ${text.split('\n').map(p => `<p class="mb-4">${p}</p>`).join('')}
         </div>
     `;
     openModal();
 }
 
-function renderSurveys() {
+function renderSurveyList() {
     const container = document.getElementById('surveyList');
     container.innerHTML = '';
-    state.config.surveys?.forEach(s => {
-        const card = createOptionCard(t(s.translation_key), 'external-link', () => tg?.openLink(s.url));
-        container.appendChild(card);
+
+    if (!state.config.surveys?.length) {
+        container.innerHTML = '<div class="py-10 text-center text-slate-400 italic">Hozircha faol so\'rovnomalar yo\'q.</div>';
+        return;
+    }
+
+    state.config.surveys.forEach(s => {
+        appendProOption(container, t(s.translation_key), 'external-link', () => {
+            vibrate('medium');
+            tg?.openLink(s.url);
+        });
     });
 }
 
 /**
- * MODALS
+ * ADMIN DASHBOARD
+ */
+async function fetchAdminDashboard() {
+    // Already implemented as mock/placeholder, enhancing with animation
+    try {
+        const resp = await fetch(`${API_BASE}/api/admin/dashboard`);
+        const stats = await resp.json();
+
+        animateCount('statsToday', stats.today || 0);
+        animateCount('statsWeek', stats.week || 0);
+        animateCount('statsMonth', stats.month || 0);
+    } catch (err) {
+        console.error('Admin Fetch Error', err);
+    }
+}
+
+function animateCount(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const obj = { val: 0 };
+    gsap.to(obj, {
+        val: value,
+        duration: 1.5,
+        ease: "power2.out",
+        onUpdate: () => el.textContent = Math.round(obj.val)
+    });
+}
+
+async function showAdminSettings(type) {
+    state.currentAdminType = type;
+    showView('adminSettingsView');
+    document.getElementById('settingsTitle').textContent = t(`btn_manage_${type}`) || 'Sozlamalar';
+    loadProSettingsList(type);
+}
+
+async function loadProSettingsList(type) {
+    const container = document.getElementById('settingsList');
+    container.innerHTML = '<div class="py-20 flex flex-col items-center gap-4 text-slate-400"><div class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div><p class="font-bold text-sm">Yuklanmoqda...</p></div>';
+
+    try {
+        const resp = await fetch(`${API_BASE}/api/admin/settings/${type}`);
+        const data = await resp.json();
+        container.innerHTML = '';
+
+        if (!data.items?.length) {
+            container.innerHTML = '<div class="py-20 text-center text-slate-400 font-medium">Hech narsa topilmadi.</div>';
+            return;
+        }
+
+        data.items.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card-pro flex items-center justify-between p-5 group';
+
+            let name = item[1] || item[0];
+            if (type === 'questions') name = t(item[1]);
+
+            card.innerHTML = `
+                <div class="space-y-1">
+                    <p class="font-extrabold text-slate-800 dark:text-slate-100">${name}</p>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${item[0]}</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-white/5 text-indigo-500 flex items-center justify-center active:scale-90 transition-all opacity-0 group-hover:opacity-100">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="vibrate('medium'); deleteSetting('${type}', '${item[0]}')" class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-white/5 text-rose-500 flex items-center justify-center active:scale-90 transition-all opacity-0 group-hover:opacity-100">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        gsap.from(container.children, { opacity: 0, y: 10, duration: 0.4, stagger: 0.05 });
+        if (window.lucide) window.lucide.createIcons();
+    } catch {
+        container.innerHTML = '<div class="py-20 text-center text-rose-500 font-bold">Xatolik yuz berdi.</div>';
+    }
+}
+
+async function deleteSetting(type, id) {
+    if (!confirm('Haqiqatdan ham o\'chirmoqchimisiz?')) return;
+    showOverlayLoading();
+    try {
+        const res = await fetch(`${API_BASE}/api/admin/settings/${type}/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            vibrate('success');
+            loadProSettingsList(type);
+        } else throw new Error();
+    } catch {
+        vibrate('error');
+        tg?.showAlert('O\'chirishda xatolik!');
+    } finally {
+        hideOverlayLoading();
+    }
+}
+
+/**
+ * MODAL SYSTEM
  */
 function openModal() {
     const modal = document.getElementById('customModal');
+    const overlay = document.getElementById('modalOverlay');
     const content = document.getElementById('modalContent');
+
     modal.classList.remove('hidden');
-    setTimeout(() => content.classList.replace('translate-y-full', 'translate-y-0'), 10);
+    gsap.to(overlay, { opacity: 1, duration: 0.3 });
+    gsap.fromTo(content, { y: '100%' }, { y: '0%', duration: 0.5, ease: "power3.out" });
     if (window.lucide) window.lucide.createIcons();
 }
 
 function closeModal() {
+    vibrate('light');
     const modal = document.getElementById('customModal');
+    const overlay = document.getElementById('modalOverlay');
     const content = document.getElementById('modalContent');
-    content.classList.replace('translate-y-0', 'translate-y-full');
-    setTimeout(() => modal.classList.add('hidden'), 300);
-}
 
-window.closeModal = closeModal;
-
-/**
- * RESET & UTILS
- */
-function resetForm() {
-    initApp();
-}
-
-window.resetForm = resetForm;
-
-function showLoading() { document.getElementById('loadingOverlay').classList.remove('hidden'); }
-function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
-
-function initNavigation() {
-    // Close lang menu on body click
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.lang-switcher')) document.getElementById('langMenu').classList.add('hidden');
+    gsap.to(overlay, { opacity: 0, duration: 0.3 });
+    gsap.to(content, {
+        y: '100%', duration: 0.4, ease: "power3.in", onComplete: () => {
+            modal.classList.add('hidden');
+        }
     });
 }
 
-// Global Exports
-window.showView = showView;
-window.toggleLangMenu = toggleLangMenu;
-window.changeLanguage = changeLanguage;
-window.saveRatingInput = saveRatingInput;
-window.submitRating = submitRating;
+window.closeModal = closeModal;
 window.showAdminSettings = showAdminSettings;
+window.toggleLangMenu = () => {
+    const m = document.getElementById('langMenu');
+    if (m.classList.contains('hidden')) {
+        m.classList.remove('hidden');
+        gsap.fromTo(m, { opacity: 0, scale: 0.9, y: -10 }, { opacity: 1, scale: 1, y: 0, duration: 0.3 });
+        renderLangOptions();
+    } else {
+        gsap.to(m, { opacity: 0, scale: 0.9, y: -10, duration: 0.2, onComplete: () => m.classList.add('hidden') });
+    }
+};
 
-// Start the app
+function renderLangOptions() {
+    const m = document.getElementById('langMenu');
+    const langs = { uz: 'O\'zbekcha', ru: 'Русский', en: 'English' };
+    m.innerHTML = Object.entries(langs).map(([code, name]) => `
+        <button onclick="changeLang('${code}')" class="w-full text-left px-4 py-3 text-sm font-bold rounded-2xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">
+            ${name}
+        </button>
+    `).join('');
+}
+
+window.changeLang = async (code) => {
+    vibrate('medium');
+    state.lang = code;
+    await initApp(); // Reload everything
+    document.getElementById('langMenu').classList.add('hidden');
+};
+
+function hideSkeleton() {
+    const s = document.getElementById('appSkeleton');
+    gsap.to(s, { opacity: 0, duration: 0.5, onComplete: () => s.style.display = 'none' });
+}
+
+function showOverlayLoading() {
+    document.body.style.pointerEvents = 'none';
+    const l = document.createElement('div');
+    l.id = 'overload';
+    l.className = 'fixed inset-0 z-[1000] glass-morphism flex items-center justify-center opacity-0';
+    l.innerHTML = '<div class="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>';
+    document.body.appendChild(l);
+    gsap.to(l, { opacity: 1, duration: 0.3 });
+}
+
+function hideOverlayLoading() {
+    document.body.style.pointerEvents = 'auto';
+    const l = document.getElementById('overload');
+    if (l) gsap.to(l, { opacity: 0, duration: 0.3, onComplete: () => l.remove() });
+}
+
+// Global functions for HTML
+window.showView = (id) => showView(id);
+window.resetForm = () => { vibrate('medium'); location.reload(); };
+window.handleRatingInput = handleRatingInput;
+window.handleRatingSubmit = handleRatingSubmit;
+window.handleComplaintInput = handleComplaintInput;
+window.handleComplaintSubmit = handleComplaintSubmit;
+
+// Boot
 initApp();
