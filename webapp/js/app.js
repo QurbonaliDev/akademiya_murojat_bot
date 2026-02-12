@@ -66,14 +66,25 @@ async function fetchConfig() {
             vibrate('medium');
             document.getElementById('adminTabBtn')?.classList.remove('hidden');
         } else {
-            // For troubleshooting: if user name starts with 'ADMIN_' or specific ID
+            // For troubleshooting
             if (user_id.toString() === '2015170305' || user_id.toString() === '1370651372') {
                 document.getElementById('adminTabBtn')?.classList.remove('hidden');
             }
         }
     } catch (err) {
         console.error('[App] Config fetch failed', err);
+        throw err;
     }
+}
+
+function updateNavbar(viewId) {
+    document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.id === 'navHome' && viewId === 'homeView') btn.classList.add('active');
+        if (btn.id === 'navComplaint' && viewId === 'complaintView') btn.classList.add('active');
+        if (btn.id === 'navRating' && viewId === 'ratingView') btn.classList.add('active');
+        if (btn.id === 'navRules' && viewId === 'rulesView') btn.classList.add('active');
+    });
 }
 
 function t(key) {
@@ -96,6 +107,8 @@ function applyTranslations() {
     // Update current lang display again just in case
     const langDisplay = document.getElementById('currentLang');
     if (langDisplay) langDisplay.textContent = state.lang.toUpperCase();
+
+    if (window.lucide) window.lucide.createIcons();
 }
 
 /**
