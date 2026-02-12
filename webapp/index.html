@@ -227,7 +227,7 @@
                     class="card-pro group flex flex-col items-center text-center gap-4 py-8">
                     <div
                         class="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg shadow-indigo-500/5">
-                        <i data-lucide="plus-circle" class="w-8 h-8"></i>
+                        <i data-lucide="message-square" class="w-8 h-8"></i>
                     </div>
                     <p class="font-extrabold text-sm tracking-tight text-slate-700 dark:text-slate-300"
                         data-i18n="btn_complaint">Murojaat</p>
@@ -259,8 +259,9 @@
                             </div>
                             <div>
                                 <span class="font-extrabold block text-slate-800 dark:text-slate-100"
-                                    data-i18n="btn_rules">Tartib qoidalari</span>
-                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Ichki
+                                    data-i18n="btn_rules">Tartib qoidalar</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter"
+                                    data-i18n="rules_subtitle">Ichki
                                     intizom va qoidalar</span>
                             </div>
                         </div>
@@ -274,12 +275,13 @@
                         <div class="flex items-center gap-5">
                             <div
                                 class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
-                                <i data-lucide="file-text" class="w-6 h-6"></i>
+                                <i data-lucide="clipboard-list" class="w-6 h-6"></i>
                             </div>
                             <div>
                                 <span class="font-extrabold block text-slate-800 dark:text-slate-100"
-                                    data-i18n="btn_surveys">So'rovnomalar</span>
-                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Ochiq
+                                    data-i18n="btn_survey">So'rovnomalar</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter"
+                                    data-i18n="survey_subtitle">Ochiq
                                     ijtimoiy so'rovlar</span>
                             </div>
                         </div>
@@ -340,7 +342,7 @@
 
         <!-- SURVEY -->
         <section id="surveyView" class="view space-y-8">
-            <h2 class="text-3xl font-black tracking-tight" data-i18n="btn_surveys">So'rovlar</h2>
+            <h2 class="text-3xl font-black tracking-tight" data-i18n="btn_survey">So'rovlar</h2>
             <div id="surveyList" class="space-y-4"></div>
         </section>
 
@@ -371,7 +373,7 @@
         <!-- ADMIN DASHBOARD -->
         <section id="adminDashboardView" class="view space-y-8">
             <div class="flex items-center justify-between">
-                <h2 class="text-3xl font-black tracking-tight">Admin</h2>
+                <h2 class="text-3xl font-black tracking-tight" data-i18n="btn_admin">Admin</h2>
                 <div class="px-3 py-1 bg-primary/10 rounded-full text-[10px] font-black text-primary uppercase">
                     Moderator</div>
             </div>
@@ -395,7 +397,8 @@
             </div>
 
             <div class="space-y-4">
-                <h3 class="text-xs font-black text-slate-500 uppercase tracking-[0.2em] pl-2">Sozlamalar</h3>
+                <h3 class="text-xs font-black text-slate-500 uppercase tracking-[0.2em] pl-2" data-i18n="btn_settings">
+                    Sozlamalar</h3>
                 <div class="grid grid-cols-1 gap-3">
                     <button onclick="vibrate('light'); showAdminSettings('admins')"
                         class="card-pro flex items-center gap-5 p-5 group">
@@ -403,9 +406,39 @@
                             class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-all">
                             <i data-lucide="users" class="w-6 h-6"></i>
                         </div>
-                        <span class="font-extrabold text-slate-700 dark:text-slate-200">Adminlar boshqaruvi</span>
+                        <span class="font-extrabold text-slate-700 dark:text-slate-200"
+                            data-i18n="btn_manage_admins">Adminlar boshqaruvi</span>
                     </button>
-                    <!-- other admin items... -->
+
+                    <button onclick="vibrate('light'); showAdminSettings('faculties')"
+                        class="card-pro flex items-center gap-5 p-5 group">
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:scale-110 transition-all">
+                            <i data-lucide="university" class="w-6 h-6"></i>
+                        </div>
+                        <span class="font-extrabold text-slate-700 dark:text-slate-200"
+                            data-i18n="btn_manage_faculties">Fakultetlar</span>
+                    </button>
+
+                    <button onclick="vibrate('light'); showAdminSettings('directions')"
+                        class="card-pro flex items-center gap-5 p-5 group">
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-all">
+                            <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+                        </div>
+                        <span class="font-extrabold text-slate-700 dark:text-slate-200"
+                            data-i18n="btn_manage_directions">Yo'nalishlar</span>
+                    </button>
+
+                    <button onclick="vibrate('light'); showAdminSettings('questions')"
+                        class="card-pro flex items-center gap-5 p-5 group">
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-all">
+                            <i data-lucide="help-circle" class="w-6 h-6"></i>
+                        </div>
+                        <span class="font-extrabold text-slate-700 dark:text-slate-200"
+                            data-i18n="btn_manage_questions">Savollar</span>
+                    </button>
                 </div>
             </div>
         </section>

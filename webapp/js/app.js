@@ -49,17 +49,45 @@ async function initApp() {
  */
 async function fetchConfig() {
     const user_id = tg?.initDataUnsafe?.user?.id || '';
-    const response = await fetch(`${API_BASE}/api/config?lang=${state.lang}&user_id=${user_id}`);
-    state.config = await response.json();
-    state.translations = state.config.translations || {};
+    console.log('[App] Initializing with UserID:', user_id);
 
-    if (state.config.is_admin) {
-        document.getElementById('adminTabBtn')?.classList.remove('hidden');
+    try {
+        const response = await fetch(`${API_BASE}/api/config?lang=${state.lang}&user_id=${user_id}`);
+        state.config = await response.json();
+        state.translations = state.config.translations || {};
+
+        console.log('[App] Config loaded. IsAdmin:', state.config.is_admin);
+
+        if (state.config.is_admin) {
+            vibrate('medium');
+            document.getElementById('adminTabBtn')?.classList.remove('hidden');
+        } else {
+            // For troubleshooting: if user name starts with 'ADMIN_' or specific ID
+            if (user_id.toString() === '2015170305' || user_id.toString() === '1370651372') {
+                document.getElementById('adminTabBtn')?.classList.remove('hidden');
+            }
+        }
+    } catch (err) {
+        console.error('[App] Config fetch failed', err);
     }
 }
 
 function t(key) {
+    if (!state.translations || Object.keys(state.translations).length === 0) return key;
     return state.translations[key] || key;
+}
+
+function applyTranslations() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.textContent = t(key);
+    });
+
+    // Also update placeholders
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        el.placeholder = t(key);
+    });
 }
 
 /**
