@@ -4,6 +4,8 @@
 LOCALES = {
     'uz': {
         'welcome': "🎓 Talim tizimi monitoring botiga xush kelibsiz!\n\nBu bot orqali siz:\n📝 Anonim murojaat qilishingiz\n📋 Tartib qoidalar bilan tanishishingiz\n📊 So'rovnomalarda qatnashishingiz mumkin\n\nQuyidagi tugmalardan birini tanlang:",
+        'welcome_title': "Xush kelibsiz!",
+        'welcome_text': "Zamonaviy va qulay platforma orqali o'z murojaatingizni yo'llang.",
         'btn_complaint': "📝 Murojaat",
         'btn_rules': "📋 Tartib qoidalar",
         'btn_survey': "📊 So'rovnoma",
@@ -237,6 +239,8 @@ LOCALES = {
     },
     'ru': {
         'welcome': "🎓 Добро пожаловать в бот мониторинга системы образования!\n\nС помощью этого бота вы можете:\n📝 Отправить анонимное обращение\n📋 Ознакомиться с правилами\n📊 Участвовать в опросах\n\nВыберите одну из кнопок ниже:",
+        'welcome_title': "Добро пожаловать!",
+        'welcome_text': "Отправьте свое обращение через современную и удобную платформу.",
         'btn_complaint': "📝 Обращение",
         'btn_rules': "📋 Правила",
         'btn_survey': "📊 Опрос",
@@ -470,6 +474,8 @@ LOCALES = {
     },
     'en': {
         'welcome': "🎓 Welcome to the Education Monitoring Bot!\n\nThrough this bot you can:\n📝 Send anonymous complaints\n📋 Read rules and regulations\n📊 Participate in surveys\n\nPlease select one of the buttons below:",
+        'welcome_title': "Welcome!",
+        'welcome_text': "Submit your request through a modern and convenient platform.",
         'btn_complaint': "📝 Complaint",
         'btn_rules': "📋 Rules",
         'btn_survey': "📊 Survey",

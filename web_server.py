@@ -18,11 +18,19 @@ logger = logging.getLogger(__name__)
 
 @middleware
 async def cors_middleware(request, handler):
-    """CORS headers qo'shish"""
-    response = await handler(request)
+    """CORS headers qo'shish va OPTIONS so'rovlarini qayta ishlash"""
+    if request.method == 'OPTIONS':
+        response = web.Response()
+    else:
+        try:
+            response = await handler(request)
+        except Exception as e:
+            logger.error(f"Middleware error: {e}")
+            response = web.json_response({'error': str(e)}, status=500)
+            
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
 
 
@@ -133,6 +141,35 @@ def get_complaint_types_from_db():
     } for row in cursor.fetchall()]
     conn.close()
     return complaint_types
+
+
+def get_rating_questions_from_db():
+    """Baholash savollarini olish"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT question_number, translation_key, answer_type 
+        FROM rating_questions 
+        WHERE is_active = 1 
+        ORDER BY question_number
+    ''')
+    questions = [{
+        'number': row[0],
+        'translation_key': row[1],
+        'answer_type': row[2]
+    } for row in cursor.fetchall()]
+    conn.close()
+    return questions
+
+
+def get_survey_links_from_db():
+    """So'rovnoma havolalarini olish"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT code, url FROM survey_links WHERE is_active = 1')
+    links = {row[0]: row[1] for row in cursor.fetchall()}
+    conn.close()
+    return links
 
 
 def save_rating_to_db(data):
@@ -352,9 +389,13 @@ async def api_config(request):
         }
     }
     
+    config['is_admin'] = False
     if user_id:
-        from utils.utils import is_admin
-        config['is_admin'] = is_admin(int(user_id))
+        try:
+            from utils.utils import is_admin
+            config['is_admin'] = is_admin(int(user_id))
+        except (ValueError, TypeError):
+            pass
         
     return web.json_response(config)
 
