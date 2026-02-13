@@ -77,15 +77,33 @@ def init_lesson_rating_table():
             faculty TEXT,
             direction TEXT NOT NULL,
             course TEXT NOT NULL,
-            subject_name TEXT NOT NULL,
-            teacher_name TEXT NOT NULL,
+            education_type TEXT,
+            education_lang TEXT,
+            subject_name TEXT,
+            teacher_name TEXT,
+            ratings TEXT,
+            comments TEXT,
             q1 TEXT, q2 TEXT, q3 TEXT, q4 TEXT, q5 TEXT, 
             q6 TEXT, q7 TEXT, q8 TEXT, q9 TEXT, q10 TEXT,
             total_score REAL,
             status TEXT DEFAULT 'new',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            source TEXT DEFAULT 'bot'
         )
     ''')
+
+    # Migration: Add missing columns if they don't exist
+    for column, definition in [
+        ('education_type', 'TEXT'), 
+        ('education_lang', 'TEXT'), 
+        ('source', "TEXT DEFAULT 'bot'"),
+        ('ratings', 'TEXT'),
+        ('comments', 'TEXT')
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE lesson_ratings ADD COLUMN {column} {definition}")
+        except sqlite3.OperationalError:
+            pass # Column already exists
     conn.commit()
     conn.close()
 
@@ -171,24 +189,31 @@ def save_lesson_rating(data):
     cursor.execute('''
         INSERT INTO lesson_ratings (
             uid, telegram_id, faculty, direction, course, 
+            education_type, education_lang,
             subject_name, teacher_name, 
+            ratings, comments,
             q1, q2, q3, q4, q5, q6, q7, q8, q9, q10,
-            total_score, status
+            total_score, status, source
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         uid,
         data.get('telegram_id'),
-        faculty_code,
+        data.get('faculty', faculty_code),
         data['direction'],
         data['course'],
-        data['subject_name'],
-        data['teacher_name'],
+        data.get('education_type', ''),
+        data.get('education_language', ''),
+        data.get('subject_name', ''),
+        data.get('teacher_name', ''),
+        json.dumps(answers),
+        data.get('comment', ''),
         str(answers.get(1, '')), str(answers.get(2, '')), str(answers.get(3, '')), 
         str(answers.get(4, '')), str(answers.get(5, '')), str(answers.get(6, '')),
         str(answers.get(7, '')), str(answers.get(8, '')), str(answers.get(9, '')), str(answers.get(10, '')),
         total_score,
-        'new'
+        'new',
+        data.get('source', 'bot')
     ))
 
     conn.commit()
