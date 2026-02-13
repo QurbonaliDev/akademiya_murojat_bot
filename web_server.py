@@ -432,6 +432,35 @@ async def api_admin_settings_list(request):
         from database_models import get_rating_questions
         return web.json_response({'items': get_rating_questions()})
     return web.json_response({'error': 'Invalid type'}, status=400)
+    
+async def api_admin_delete_setting(request):
+    """Admin sozlamalarini o'chirish"""
+    setting_type = request.match_info.get('type')
+    setting_id = request.match_info.get('id')
+    
+    try:
+        if setting_type == 'admins':
+            from database_models import remove_admin
+            success = remove_admin(int(setting_id))
+        elif setting_type == 'faculties':
+            from database_models import delete_faculty
+            success = delete_faculty(setting_id)
+        elif setting_type == 'directions':
+            from database_models import delete_direction
+            success = delete_direction(setting_id)
+        elif setting_type == 'questions':
+            from database_models import delete_rating_question
+            success = delete_rating_question(int(setting_id))
+        else:
+            return web.json_response({'error': 'Invalid type'}, status=400)
+            
+        if success:
+            return web.json_response({'success': True})
+        else:
+            return web.json_response({'error': 'Not found or failed'}, status=404)
+    except Exception as e:
+        logger.error(f"Error deleting setting: {e}")
+        return web.json_response({'error': str(e)}, status=500)
 
 async def api_admin_translations_list(request):
     from database_models import get_all_translations
@@ -481,6 +510,7 @@ def create_webapp_server():
     app.router.add_get('/api/admin/stats', api_admin_stats)
     app.router.add_get('/api/admin/dashboard', api_admin_dashboard)
     app.router.add_get('/api/admin/settings/{type}', api_admin_settings_list)
+    app.router.add_delete('/api/admin/settings/{type}/{id}', api_admin_delete_setting)
     app.router.add_get('/api/admin/translations', api_admin_translations_list)
     
     # Root route for index.html
