@@ -86,10 +86,18 @@
                 @apply bg-white dark:bg-dark-card border border-slate-100 dark:border-white/5 rounded-4xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300; 
             }
             .input-pro { 
-                @apply w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-3xl py-4 px-6 focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all text-lg font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500; 
+                @apply w-full bg-slate-50 dark:bg-slate-900/40 border-2 border-transparent focus:border-primary focus:bg-white dark:focus:bg-slate-800/60 rounded-3xl py-4 px-7 focus:ring-4 focus:ring-primary/10 outline-none transition-all text-lg font-bold text-slate-800 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-600; 
+                box-shadow: 0 4px 6px -1px rgba(0,0,0,0.01), 0 2px 4px -1px rgba(0,0,0,0.01);
             }
             .label-pro {
-                @apply block text-sm font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 ml-2;
+                @apply flex items-center gap-2.5 text-[10px] font-black text-indigo-500/80 dark:text-indigo-400 uppercase tracking-[0.2em] mb-4 ml-2;
+            }
+            .label-pro i {
+                @apply text-primary-light;
+            }
+            .label-pro::after {
+                content: '';
+                @apply h-px flex-1 bg-gradient-to-r from-indigo-100 to-transparent dark:from-white/5;
             }
             .option-pro { 
                 @apply bg-white dark:bg-slate-800/40 border-[1.5px] border-slate-100 dark:border-white/5 hover:border-primary/50 p-5 rounded-3xl transition-all cursor-pointer flex items-center gap-5 active:scale-[0.98] group; 
