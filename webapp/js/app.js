@@ -790,7 +790,7 @@ function hideOverlayLoading() {
 }
 
 // Global functions for HTML
-window.showView = (id) => showView(id);
+window.showView = showView;
 window.resetForm = () => { vibrate('medium'); location.reload(); };
 window.handleRatingInput = handleRatingInput;
 window.handleRatingSubmit = handleRatingSubmit;
