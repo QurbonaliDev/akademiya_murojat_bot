@@ -106,6 +106,8 @@ LOCALES = {
         'message_placeholder': "Ushbu xabar butunlay anonim qoladi...",
         'enter_comment': "Qo'shimcha fikr va mulohazalar:",
         'comment_placeholder': "Fikringizni yozib qoldirishingiz mumkin (ixtiyoriy)...",
+        'btn_next': "Keyingi ➡️",
+        'btn_send': "Yuborish 📤",
         'complaint_accepted': "✅ Murojaatingiz qabul qilindi!",
         'anonymous_notice': "🔒 DIQQAT: Bu tizim butunlay anonim! Sizning shaxsingiz saqlanmaydi.",
 
