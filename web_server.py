@@ -24,8 +24,12 @@ async def cors_middleware(request, handler):
     else:
         try:
             response = await handler(request)
+        except web.HTTPException as ex:
+            # HTTP xatolarini (404, 403 va h.k.) o'z holicha o'tkazib yuboramiz
+            # Faqat CORS headerlarini qo'shish kerak pastda
+            response = ex
         except Exception as e:
-            logger.error(f"Middleware error: {e}")
+            logger.error(f"Middleware error: {e}", exc_info=True)
             response = web.json_response({'error': str(e)}, status=500)
             
     response.headers['Access-Control-Allow-Origin'] = '*'
@@ -463,11 +467,10 @@ async def api_admin_delete_setting(request):
         return web.json_response({'error': str(e)}, status=500)
 
 async def api_admin_translations_list(request):
-    from database_models import get_all_translations
-    # This function might need to be created if not exists
+    lang = request.query.get('lang', 'uz')
     try:
         from database_models import get_all_translations
-        return web.json_response(get_all_translations())
+        return web.json_response(get_all_translations(lang))
     except ImportError:
         # Fallback if not implemented
         return web.json_response({'error': 'Not implemented'}, status=501)
@@ -516,11 +519,17 @@ def create_webapp_server():
     # Root route for index.html
     app.router.add_get('/', index_handler)
 
-    # Static files (CSS, JS)
+    # Static files (CSS, JS, assets)
     webapp_path = os.path.join(os.path.dirname(__file__), 'webapp')
     if os.path.exists(webapp_path):
-        # append_version=True browser keshlash problemalarini oldini oladi
-        app.router.add_static('/', webapp_path, name='static')
+        # Statik fayllarni papkalar bo'yicha qo'shamiz
+        for folder in ['js', 'css', 'assets', 'img', 'pdf']:
+            folder_path = os.path.join(webapp_path, folder)
+            if os.path.exists(folder_path):
+                app.router.add_static(f'/{folder}', folder_path)
+        
+        # Boshqa fayllar (favicon va h.k.) uchun root static (faqat fayllar uchun)
+        app.router.add_static('/static', webapp_path, name='static_root')
     
     return app
 
