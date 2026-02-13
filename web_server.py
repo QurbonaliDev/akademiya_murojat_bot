@@ -478,10 +478,23 @@ async def api_admin_translations_list(request):
 
 async def index_handler(request):
     """Asosiy index.html ni yuborish"""
-    index_path = os.path.join(os.path.dirname(__file__), 'webapp', 'index.html')
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    index_path = os.path.join(base_dir, 'webapp', 'index.html')
+    
+    logger.info(f"Index request. Path: {index_path} (Exists: {os.path.exists(index_path)})")
+    
     if os.path.exists(index_path):
         return web.FileResponse(index_path)
-    return web.Response(text="index.html topilmadi", status=404)
+    
+    # Debug information for logs
+    try:
+        files = os.listdir(os.path.join(base_dir, 'webapp'))
+        debug_msg = f"index.html topilmadi. Webapp ichida bor: {files}"
+    except:
+        debug_msg = f"index.html va webapp folder topilmadi. Root: {os.listdir(base_dir)}"
+        
+    logger.error(debug_msg)
+    return web.Response(text=debug_msg, status=404)
 
 
 # ============================================
@@ -520,15 +533,18 @@ def create_webapp_server():
     app.router.add_get('/', index_handler)
 
     # Static files (CSS, JS, assets)
-    webapp_path = os.path.join(os.path.dirname(__file__), 'webapp')
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    webapp_path = os.path.join(base_dir, 'webapp')
+    
     if os.path.exists(webapp_path):
-        # Statik fayllarni papkalar bo'yicha qo'shamiz
         for folder in ['js', 'css', 'assets', 'img', 'pdf']:
             folder_path = os.path.join(webapp_path, folder)
             if os.path.exists(folder_path):
+                # add_static ishlatiladi, lekin absolute path bilan
                 app.router.add_static(f'/{folder}', folder_path)
+                logger.info(f"Registered static: /{folder} -> {folder_path}")
         
-        # Boshqa fayllar (favicon va h.k.) uchun root static (faqat fayllar uchun)
+        # Barcha fayllarni birinchi darajadan serve qilish
         app.router.add_static('/static', webapp_path, name='static_root')
     
     return app
@@ -536,10 +552,15 @@ def create_webapp_server():
 
 async def start_web_server(host='0.0.0.0', port=8080):
     """Web serverni ishga tushirish"""
+    # Debug paths at startup
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    logger.info(f"Starting server. Base DIR: {base_dir}")
+    logger.info(f"Root contents: {os.listdir(base_dir)}")
+    
     app = create_webapp_server()
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, host, port)
     await site.start()
-    logger.info(f"Mini App web server LATEST VERSION 4.0 ishga tushdi: http://{host}:{port}")
+    logger.info(f"Mini App web server LATEST VERSION 5.0 ishga tushdi: http://{host}:{port}")
     return runner
