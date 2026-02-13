@@ -238,22 +238,28 @@ function renderComplaintStep(step) {
             break;
         case 7: // Subject
             stepEl.innerHTML = `
-                <h3 class="text-xl font-bold mb-6">${t('enter_subject')}</h3>
-                <input type="text" id="cInput" class="input-pro mb-8" placeholder="${t('subject_placeholder')}">
+                <div class="space-y-2">
+                    <label class="label-pro">${t('enter_subject')}</label>
+                    <input type="text" id="cInput" class="input-pro mb-8" placeholder="${t('subject_placeholder')}">
+                </div>
                 <button onclick="handleComplaintInput('subject_name', 7)" class="btn-pro w-full">${t('btn_next')}</button>
             `;
             break;
         case 8: // Teacher
             stepEl.innerHTML = `
-                <h3 class="text-xl font-bold mb-6">${t('enter_teacher')}</h3>
-                <input type="text" id="cInput" class="input-pro mb-8" placeholder="${t('teacher_placeholder')}">
+                <div class="space-y-2">
+                    <label class="label-pro">${t('enter_teacher')}</label>
+                    <input type="text" id="cInput" class="input-pro mb-8" placeholder="${t('teacher_placeholder')}">
+                </div>
                 <button onclick="handleComplaintInput('teacher_name', 8)" class="btn-pro w-full">${t('btn_next')}</button>
             `;
             break;
         case 9: // Message
             stepEl.innerHTML = `
-                <h3 class="text-xl font-bold mb-6">${t('enter_message')}</h3>
-                <textarea id="cInput" class="input-pro h-48 mb-8 resize-none" placeholder="${t('message_placeholder')}"></textarea>
+                <div class="space-y-2">
+                    <label class="label-pro">${t('enter_message')}</label>
+                    <textarea id="cInput" class="input-pro h-48 mb-8 resize-none" placeholder="${t('message_placeholder')}"></textarea>
+                </div>
                 <button onclick="handleComplaintSubmit()" class="btn-pro w-full">
                     <i data-lucide="send" class="w-6 h-6"></i>
                     ${t('btn_send')}
@@ -377,15 +383,19 @@ function renderRatingStep(step) {
             break;
         case 6: // Subject
             stepEl.innerHTML = `
-                <h3 class="text-xl font-bold mb-6">${t('enter_subject')}</h3>
-                <input type="text" id="rInput" class="input-pro mb-8" placeholder="${t('subject_placeholder')}">
+                <div class="space-y-2">
+                    <label class="label-pro">${t('enter_subject')}</label>
+                    <input type="text" id="rInput" class="input-pro mb-8" placeholder="${t('subject_placeholder')}">
+                </div>
                 <button onclick="handleRatingInput('subject_name', 7)" class="btn-pro w-full">${t('btn_next')}</button>
             `;
             break;
         case 7: // Teacher
             stepEl.innerHTML = `
-                <h3 class="text-xl font-bold mb-6">${t('enter_teacher')}</h3>
-                <input type="text" id="rInput" class="input-pro mb-8" placeholder="${t('teacher_placeholder')}">
+                <div class="space-y-2">
+                    <label class="label-pro">${t('enter_teacher')}</label>
+                    <input type="text" id="rInput" class="input-pro mb-8" placeholder="${t('teacher_placeholder')}">
+                </div>
                 <button onclick="handleRatingInput('teacher_name', 8)" class="btn-pro w-full">${t('btn_next')}</button>
             `;
             break;
