@@ -343,6 +343,8 @@ LOCALES = {
         'teacher_placeholder': "Введите имя...",
         'enter_message': "Текст вашего обращения:",
         'message_placeholder': "Напишите здесь...",
+        'btn_next': "Далее ➡️",
+        'btn_send': "Отправить 📤",
         'complaint_accepted': "✅ Ваше обращение принято!",
         'anonymous_notice': "🔒 ВНИМАНИЕ: Эта система полностью анонимна! Ваши данные не сохраняются.",
 
@@ -582,6 +584,8 @@ LOCALES = {
         'teacher_placeholder': "Enter name here...",
         'enter_message': "Your message content:",
         'message_placeholder': "Write here...",
+        'btn_next': "Next ➡️",
+        'btn_send': "Send 📤",
         'complaint_accepted': "✅ Your complaint has been accepted!",
         'anonymous_notice': "🔒 NOTICE: This system is completely anonymous! Your identity is not saved.",
 
