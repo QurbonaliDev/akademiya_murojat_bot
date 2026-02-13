@@ -541,5 +541,5 @@ async def start_web_server(host='0.0.0.0', port=8080):
     await runner.setup()
     site = web.TCPSite(runner, host, port)
     await site.start()
-    logger.info(f"Mini App web server ishga tushdi: http://{host}:{port}")
+    logger.info(f"Mini App web server LATEST VERSION 4.0 ishga tushdi: http://{host}:{port}")
     return runner
