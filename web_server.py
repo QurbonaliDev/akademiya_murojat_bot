@@ -387,6 +387,7 @@ async def api_config(request):
         'complaint_types': get_complaint_types_from_db(),
         'rating_questions': get_rating_questions_from_db(),
         'surveys': get_survey_links_from_db(),
+        'directions': get_directions_from_db(),
         'courses': {
             'regular': get_courses_from_db('regular'),
             'magistr': get_courses_from_db('magistr')

@@ -194,10 +194,11 @@ function renderComplaintStep(step) {
             break;
         case 2: // Direction
             stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_direction')}</h3><div class="space-y-4" id="cOptions"></div>`;
-            const directions = state.config.directions?.filter(d => d.faculty_code === state.complaint.answers.faculty) || [];
-            directions.forEach(d => {
+            const facultyCode = state.complaint.answers.faculty;
+            const dirs = (state.config.directions || []).filter(d => d.faculty_code === facultyCode);
+            dirs.forEach(d => {
                 appendProOption(stepEl.querySelector('#cOptions'), t(d.translation_key), 'graduation-cap', () => {
-                    saveAndNextComplaint('direction', d.code, state.complaint.answers.faculty === 'magistratura' ? 5 : 3);
+                    saveAndNextComplaint('direction', d.code, facultyCode === 'magistratura' ? 5 : 3);
                 });
             });
             break;
@@ -357,8 +358,9 @@ function renderRatingStep(step) {
             break;
         case 2: // Direction
             stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_direction')}</h3><div class="space-y-4" id="rOptions"></div>`;
-            const directions = state.config.directions?.filter(d => d.faculty_code === state.rating.answers.faculty) || [];
-            directions.forEach(d => appendProOption(stepEl.querySelector('#rOptions'), t(d.translation_key), 'graduation-cap', () => saveAndNextRating('direction', d.code, state.rating.answers.faculty === 'magistratura' ? 5 : 3)));
+            const facultCodeRating = state.rating.answers.faculty;
+            const directionsRating = (state.config.directions || []).filter(d => d.faculty_code === facultCodeRating);
+            directionsRating.forEach(d => appendProOption(stepEl.querySelector('#rOptions'), t(d.translation_key), 'graduation-cap', () => saveAndNextRating('direction', d.code, facultCodeRating === 'magistratura' ? 5 : 3)));
             break;
         case 3: // Edu Type
             stepEl.innerHTML = `<h3 class="text-xl font-bold mb-6">${t('choose_edu_type')}</h3><div class="space-y-4" id="rOptions"></div>`;
@@ -566,9 +568,9 @@ function renderRulesList() {
     const container = document.getElementById('rulesList');
     container.innerHTML = '';
     const rules = [
-        { id: 'general', title: 'btn_rules_general', icon: 'info' },
-        { id: 'grading', title: 'btn_rules_grading', icon: 'award' },
-        { id: 'exam', title: 'btn_rules_exam', icon: 'file-text' }
+        { id: 'general', title: 'btn_general', icon: 'info' },
+        { id: 'grading', title: 'btn_grading', icon: 'award' },
+        { id: 'exam', title: 'btn_exam', icon: 'file-text' }
     ];
 
     rules.forEach(rule => {
@@ -579,7 +581,7 @@ function renderRulesList() {
 function openRuleDetail(id) {
     vibrate('medium');
     const content = document.getElementById('modalContent');
-    const text = t(`rules_${id}_content`) || 'Yaqinda qo\'shiladi...';
+    const text = t(`rules_${id}_text`) || t(`btn_${id}`) || 'Yaqinda qo\'shiladi...';
 
     content.innerHTML = `
         <div class="flex items-center justify-between mb-8">
